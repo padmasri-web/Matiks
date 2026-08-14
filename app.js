@@ -21,6 +21,7 @@ const authRoutes = require('./routes/authRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const ticTacToeRoutes = require('./routes/tic-tac-toe_Routes');
 const postRoutes = require('./routes/postRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
 
 // Import models for seeding
 const User = require('./models/Profile');
@@ -70,10 +71,124 @@ io.on('connection', (socket) => {
     }
   });
 
+  // WebRTC 1-on-1 & In-Game Calling Signaling Handlers
+  socket.on('call_user', (data) => {
+    // data: { targetUserId, callerId, callerName, callerUsername, callType, offer }
+    if (data && data.targetUserId) {
+      const targetSocketId = userSockets.get(data.targetUserId.toString());
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('incoming_call', {
+          callerId: data.callerId || socket.userId,
+          callerName: data.callerName || 'Friend',
+          callerUsername: data.callerUsername || 'player',
+          callType: data.callType || 'video',
+          offer: data.offer,
+          socketId: socket.id
+        });
+      }
+    }
+  });
+
+  socket.on('answer_call', (data) => {
+    // data: { targetSocketId, callerId, answer }
+    if (data && data.callerId) {
+      const callerSocketId = userSockets.get(data.callerId.toString()) || data.targetSocketId;
+      if (callerSocketId) {
+        io.to(callerSocketId).emit('call_accepted', {
+          answer: data.answer,
+          responderSocketId: socket.id
+        });
+      }
+    }
+  });
+
+  socket.on('ice_candidate', (data) => {
+    // data: { targetUserId, candidate, targetSocketId }
+    if (data) {
+      const targetSocketId = data.targetSocketId || (data.targetUserId ? userSockets.get(data.targetUserId.toString()) : null);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('ice_candidate', {
+          candidate: data.candidate,
+          fromSocketId: socket.id
+        });
+      }
+    }
+  });
+
+  socket.on('end_call', (data) => {
+    if (data) {
+      const targetSocketId = data.targetSocketId || (data.targetUserId ? userSockets.get(data.targetUserId.toString()) : null);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('call_ended', { fromSocketId: socket.id });
+      }
+    }
+  });
+
+  // WebRTC Multi-Peer Group Video Room Handlers
+  socket.on('join_video_room', (data) => {
+    // data: { roomId, userId, userName, userUsername }
+    if (data && data.roomId) {
+      const roomName = `meeting_${data.roomId}`;
+      socket.join(roomName);
+      socket.currentRoom = roomName;
+      socket.roomId = data.roomId;
+
+      // Get existing sockets in this room
+      const roomSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []);
+      const otherSockets = roomSockets.filter(id => id !== socket.id);
+
+      // Notify caller of existing room peers
+      socket.emit('room_peers', { peers: otherSockets });
+
+      // Broadcast to existing room peers that a new user joined
+      socket.to(roomName).emit('user_joined_room', {
+        socketId: socket.id,
+        userId: data.userId,
+        userName: data.userName,
+        userUsername: data.userUsername
+      });
+
+      // Broadcast room participant count update to all users
+      io.emit('room_participants_updated', {
+        roomId: data.roomId,
+        count: roomSockets.length
+      });
+    }
+  });
+
+  socket.on('leave_video_room', (data) => {
+    if (socket.currentRoom) {
+      socket.to(socket.currentRoom).emit('user_left_room', { socketId: socket.id });
+      socket.leave(socket.currentRoom);
+      
+      if (socket.roomId) {
+        const roomSockets = Array.from(io.sockets.adapter.rooms.get(socket.currentRoom) || []);
+        io.emit('room_participants_updated', {
+          roomId: socket.roomId,
+          count: roomSockets.length
+        });
+      }
+
+      socket.currentRoom = null;
+      socket.roomId = null;
+    }
+  });
+
   socket.on('disconnect', () => {
     if (socket.userId) {
       userSockets.delete(socket.userId);
       console.log(`⚡ WebSocket: User ${socket.userId} disconnected`);
+    }
+
+    if (socket.currentRoom) {
+      socket.to(socket.currentRoom).emit('user_left_room', { socketId: socket.id });
+      if (socket.roomId) {
+        const roomSockets = Array.from(io.sockets.adapter.rooms.get(socket.currentRoom) || []);
+        io.emit('room_participants_updated', {
+          roomId: socket.roomId,
+          count: roomSockets.length
+        });
+      }
     }
   });
 });
@@ -271,6 +386,7 @@ app.use('/api/challenges', ensureAuthenticated, challengeRoutes);
 app.use('/', ensureAuthenticated, gameRoutes);
 app.use('/', ensureAuthenticated, friendRoutes);
 app.use('/', ensureAuthenticated, postRoutes);
+app.use('/', ensureAuthenticated, meetingRoutes);
 
 // Protected Dashboard Arena Page Route
 app.get('/', ensureAuthenticated, (req, res) => {

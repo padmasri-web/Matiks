@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matiks - Community Feed</title>
-  <meta name="description" content="Share game highlights, high scores, puzzle solutions, and connect with the Matiks gaming community in real time.">
+  <title>Matiks - Community Feed & Video Meetings</title>
+  <meta name="description" content="Share game highlights, schedule video meetings, call friends in-game, and connect with the Matiks community in real time.">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/dashboard.css">
@@ -14,37 +14,55 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
 
   <style>
-    .feed-layout {
+    .feed-container-wrapper {
       width: 100%;
-      max-width: 880px;
+      max-width: 1120px;
       margin: 0 auto 40px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .feed-container-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .feed-left-stream {
       display: flex;
       flex-direction: column;
       gap: 24px;
+    }
+
+    .feed-right-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
     
     /* Top Post Creation Box */
     .create-post-card {
       background: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      border: 1.5px solid #e2e8f0;
       border-radius: 20px;
-      padding: 26px;
+      padding: 24px;
       box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
     }
     .create-post-header {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
     .create-post-avatar {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       background: #4564C6;
       color: #ffffff;
       font-weight: 800;
-      font-size: 20px;
+      font-size: 19px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -66,7 +84,7 @@
       font-size: 15px;
       font-weight: 500;
       resize: vertical;
-      min-height: 96px;
+      min-height: 90px;
       outline: none;
       transition: all 0.2s ease;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
@@ -77,7 +95,7 @@
     }
     .category-pills-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       margin-top: 14px;
       flex-wrap: wrap;
     }
@@ -86,7 +104,7 @@
       border: 2px solid #1e293b;
       color: #1e293b;
       border-radius: 20px;
-      padding: 6px 16px;
+      padding: 6px 14px;
       font-size: 13px;
       font-weight: 800;
       cursor: pointer;
@@ -105,7 +123,7 @@
       box-shadow: 0 3px 0 #1e293b;
     }
     .media-input-wrapper {
-      margin-top: 14px;
+      margin-top: 12px;
       display: none;
     }
     .media-input-wrapper input {
@@ -123,7 +141,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 20px;
+      margin-top: 18px;
+      gap: 12px;
     }
     .post-submit-btn {
       background: #85ef47;
@@ -131,20 +150,33 @@
       color: #1e293b;
       font-family: var(--font-heading, 'Outfit', sans-serif);
       font-weight: 900;
-      font-size: 15px;
-      padding: 10px 26px;
+      font-size: 14px;
+      padding: 9px 20px;
       border-radius: 14px;
       cursor: pointer;
-      box-shadow: 0 4px 0 #1e293b;
+      box-shadow: 0 3px 0 #1e293b;
       transition: all 0.15s ease;
     }
     .post-submit-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 5px 0 #1e293b;
+      box-shadow: 0 4px 0 #1e293b;
     }
-    .post-submit-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #1e293b;
+    .schedule-meet-btn {
+      background: #38bdf8;
+      border: 2px solid #1e293b;
+      color: #1e293b;
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 900;
+      font-size: 14px;
+      padding: 9px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #1e293b;
+      transition: all 0.15s ease;
+    }
+    .schedule-meet-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 #1e293b;
     }
     
     /* Post Cards */
@@ -152,7 +184,7 @@
       background: #ffffff;
       border: 1.5px solid #e2e8f0;
       border-radius: 20px;
-      padding: 24px;
+      padding: 22px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.04);
       animation: slideInDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -172,13 +204,13 @@
       gap: 12px;
     }
     .post-avatar {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: #4564C6;
       color: #ffffff;
       font-weight: 800;
-      font-size: 19px;
+      font-size: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -191,7 +223,7 @@
     .post-author-name {
       font-family: var(--font-heading, 'Outfit', sans-serif);
       font-weight: 800;
-      font-size: 16px;
+      font-size: 15px;
       color: #1e293b;
     }
     .post-author-username {
@@ -203,7 +235,7 @@
       background: #f1f5f9;
       color: #3b82f6;
       border: 1.5px solid #cbd5e1;
-      padding: 4px 14px;
+      padding: 4px 12px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 800;
@@ -218,12 +250,11 @@
     }
     .post-image-attachment {
       width: 100%;
-      max-height: 460px;
+      max-height: 420px;
       object-fit: cover;
       border-radius: 16px;
       margin-bottom: 16px;
       border: 2px solid #e2e8f0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     .post-action-bar {
       display: flex;
@@ -243,7 +274,7 @@
       gap: 6px;
       cursor: pointer;
       transition: all 0.15s ease;
-      padding: 8px 16px;
+      padding: 7px 14px;
       border-radius: 12px;
     }
     .post-action-btn:hover {
@@ -255,14 +286,77 @@
       border-color: #fda4af;
       color: #e11d48;
     }
-    .post-action-btn.liked svg {
-      fill: #e11d48;
-      stroke: #e11d48;
+
+    /* Sidebar Right Panel Widgets */
+    .sidebar-widget-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
     }
-    .time-ago {
+    .sidebar-widget-title {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 16px;
+      color: #1e293b;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .friend-call-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      margin-bottom: 8px;
+    }
+    .friend-call-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .call-btn-small {
+      background: #85ef47;
+      border: 1.5px solid #1e293b;
+      color: #1e293b;
+      font-weight: 800;
       font-size: 12px;
-      color: #94a3b8;
-      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 0 #1e293b;
+      transition: all 0.15s ease;
+    }
+    .call-btn-small:hover {
+      transform: translateY(-1px);
+    }
+    .room-item-card {
+      background: #f0f9ff;
+      border: 1.5px solid #bae6fd;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .room-join-btn {
+      width: 100%;
+      background: #0284c7;
+      color: #ffffff;
+      border: 2px solid #0369a1;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.15s ease;
+    }
+    .room-join-btn:hover {
+      background: #0369a1;
     }
   </style>
 </head>
@@ -277,109 +371,189 @@
       <!-- Navbar Header -->
       <%- include('../dashboard/navbar') %>
 
-      <div class="feed-layout">
+      <div class="feed-container-wrapper">
         
-        <!-- Top Create Post Card -->
-        <div class="create-post-card">
-          <div class="create-post-header">
-            <div class="create-post-avatar" style="<%= user.avatarUrl ? 'background-image: url(' + user.avatarUrl + '); color: transparent;' : '' %>">
-              <%= user.avatarUrl ? '' : user.name.charAt(0) %>
-            </div>
-            <div>
-              <div style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 20px; color: #1e293b; margin-bottom: 2px;">
-                Community Feed
+        <!-- Left Column: Feed Creation & Posts Stream -->
+        <div class="feed-left-stream">
+          
+          <!-- Top Create Post Card -->
+          <div class="create-post-card">
+            <div class="create-post-header">
+              <div class="create-post-avatar" style="<%= user.avatarUrl ? 'background-image: url(' + user.avatarUrl + '); color: transparent;' : '' %>">
+                <%= user.avatarUrl ? '' : user.name.charAt(0) %>
               </div>
-              <div style="font-size: 13px; color: #64748b; font-weight: 600;">
-                Share your duel highlights, record scores, & puzzle solutions live!
+              <div>
+                <div style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 19px; color: #1e293b; margin-bottom: 2px;">
+                  Community Feed
+                </div>
+                <div style="font-size: 13px; color: #64748b; font-weight: 600;">
+                  Share game highlights, record scores, or schedule a video meeting!
+                </div>
               </div>
+            </div>
+
+            <textarea id="post-content-input" class="post-textarea" placeholder="What's on your mind? Share a duel highlight, record score, or puzzle tip..."></textarea>
+
+            <!-- Category Selection Pills -->
+            <div class="category-pills-row" id="category-pills">
+              <span class="cat-pill active" data-cat="General">💬 General</span>
+              <span class="cat-pill" data-cat="Highlight">🎯 Highlight</span>
+              <span class="cat-pill" data-cat="Record">🔥 Record</span>
+              <span class="cat-pill" data-cat="Solution">💡 Solution</span>
+              <span class="cat-pill" onclick="toggleMediaInput()">🖼️ Add Image URL</span>
+            </div>
+
+            <!-- Optional Media Image Input -->
+            <div class="media-input-wrapper" id="media-input-wrapper">
+              <input type="text" id="post-image-input" placeholder="Paste image or screenshot URL (e.g. https://...)" />
+            </div>
+
+            <div class="create-post-actions">
+              <button class="schedule-meet-btn" onclick="openScheduleModal()">
+                📅 Schedule Meeting
+              </button>
+              <button class="post-submit-btn" id="submit-post-btn" onclick="publishPost()">
+                Post Now 🚀
+              </button>
             </div>
           </div>
 
-          <textarea id="post-content-input" class="post-textarea" placeholder="What's on your mind? Share a duel highlight, record score, or puzzle tip..."></textarea>
+          <!-- Feed Stream List Container -->
+          <div id="feed-container" style="display: flex; flex-direction: column; gap: 20px;">
+            <% if (posts && posts.length > 0) { %>
+              <% posts.forEach(function(p) { %>
+                <div class="post-card" id="post-card-<%= p._id %>">
+                  <div class="post-card-header">
+                    <a href="/profile/user/<%= p.authorUsername || (p.author ? p.author.username : '') %>" class="post-author-left" style="text-decoration: none;">
+                      <div class="post-avatar" style="<%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? 'background-image: url(' + (p.authorAvatarUrl || p.author.avatarUrl) + '); color: transparent;' : '' %>">
+                        <%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? '' : (p.authorName || (p.author ? p.author.name : 'U')).charAt(0) %>
+                      </div>
+                      <div>
+                        <div class="post-author-name"><%= p.authorName || (p.author ? p.author.name : 'Matiks Player') %></div>
+                        <div class="post-author-username">@<%= p.authorUsername || (p.author ? p.author.username : 'player') %></div>
+                      </div>
+                    </a>
 
-          <!-- Category Selection Pills -->
-          <div class="category-pills-row" id="category-pills">
-            <span class="cat-pill active" data-cat="General">💬 General</span>
-            <span class="cat-pill" data-cat="Highlight">🎯 Highlight</span>
-            <span class="cat-pill" data-cat="Record">🔥 Record</span>
-            <span class="cat-pill" data-cat="Solution">💡 Solution</span>
-            <span class="cat-pill" onclick="toggleMediaInput()">🖼️ Add Image URL</span>
-          </div>
-
-          <!-- Optional Media Image Input -->
-          <div class="media-input-wrapper" id="media-input-wrapper">
-            <input type="text" id="post-image-input" placeholder="Paste image or screenshot URL (e.g. https://...)" />
-          </div>
-
-          <div class="create-post-actions">
-            <span style="font-size: 13px; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-              <span style="color: #10b981; font-weight: 800;">●</span> Broadcasts live via WebSockets
-            </span>
-            <button class="post-submit-btn" id="submit-post-btn" onclick="publishPost()">
-              Post Now 🚀
-            </button>
-          </div>
-        </div>
-
-        <!-- Feed Stream List Container -->
-        <div id="feed-container" style="display: flex; flex-direction: column; gap: 20px;">
-          <% if (posts && posts.length > 0) { %>
-            <% posts.forEach(function(p) { %>
-              <div class="post-card" id="post-card-<%= p._id %>">
-                <div class="post-card-header">
-                  <a href="/profile/user/<%= p.authorUsername || (p.author ? p.author.username : '') %>" class="post-author-left" style="text-decoration: none;">
-                    <div class="post-avatar" style="<%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? 'background-image: url(' + (p.authorAvatarUrl || p.author.avatarUrl) + '); color: transparent;' : '' %>">
-                      <%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? '' : (p.authorName || (p.author ? p.author.name : 'U')).charAt(0) %>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <span class="post-cat-badge"><%= p.category || 'General' %></span>
+                      <span class="time-ago"><%= new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
                     </div>
-                    <div>
-                      <div class="post-author-name"><%= p.authorName || (p.author ? p.author.name : 'Matiks Player') %></div>
-                      <div class="post-author-username">@<%= p.authorUsername || (p.author ? p.author.username : 'player') %></div>
-                    </div>
-                  </a>
+                  </div>
 
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <span class="post-cat-badge"><%= p.category || 'General' %></span>
-                    <span class="time-ago"><%= new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                  <div class="post-content-body"><%= p.content %></div>
+
+                  <% if (p.image) { %>
+                    <img src="<%= p.image %>" class="post-image-attachment" alt="Post Attachment" onerror="this.style.display='none'" />
+                  <% } %>
+
+                  <% if (p.category === 'Meeting' && p.roomId) { %>
+                    <button class="room-join-btn" onclick="joinMeetingRoom('<%= p.roomId %>', 'Video Meeting Room')" style="margin-bottom: 14px;">
+                      📹 Join Video Room Now
+                    </button>
+                  <% } %>
+
+                  <div class="post-action-bar">
+                    <button class="post-action-btn <%= p.isLiked ? 'liked' : '' %>" id="like-btn-<%= p._id %>" onclick="toggleLike('<%= p._id %>')">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="<%= p.isLiked ? '#e11d48' : 'none' %>" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                      <span id="like-count-<%= p._id %>"><%= p.likesCount || 0 %></span> Likes
+                    </button>
+
+                    <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">
+                      💬 Comment
+                    </button>
+
+                    <button class="post-action-btn" onclick="copyPostLink('<%= p._id %>')">
+                      🚀 Share
+                    </button>
                   </div>
                 </div>
-
-                <div class="post-content-body"><%= p.content %></div>
-
-                <% if (p.image) { %>
-                  <img src="<%= p.image %>" class="post-image-attachment" alt="Post Attachment" onerror="this.style.display='none'" />
-                <% } %>
-
-                <div class="post-action-bar">
-                  <button class="post-action-btn <%= p.isLiked ? 'liked' : '' %>" id="like-btn-<%= p._id %>" onclick="toggleLike('<%= p._id %>')">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="<%= p.isLiked ? '#e11d48' : 'none' %>" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                    <span id="like-count-<%= p._id %>"><%= p.likesCount || 0 %></span> Likes
-                  </button>
-
-                  <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">
-                    💬 Comment
-                  </button>
-
-                  <button class="post-action-btn" onclick="copyPostLink('<%= p._id %>')">
-                    🚀 Share
-                  </button>
-                </div>
+              <% }); %>
+            <% } else { %>
+              <div id="feed-empty-state" style="background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 20px; padding: 44px; text-align: center; color: #64748b; font-weight: 600;">
+                No posts yet. Be the first to publish a post to the community!
               </div>
-            <% }); %>
-          <% } else { %>
-            <div id="feed-empty-state" style="background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 20px; padding: 44px; text-align: center; color: #64748b; font-weight: 600;">
-              No posts yet. Be the first to publish a post to the community!
+            <% } %>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Video Calling & Active Rooms Sidebar Panel -->
+        <div class="feed-right-sidebar">
+          
+          <!-- Instant Video Call Room Widget -->
+          <div class="sidebar-widget-card" style="background: linear-gradient(135deg, #0284c7, #0f172a); color: #ffffff; border: 2px solid #38bdf8;">
+            <div style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 17px; margin-bottom: 6px;">
+              📹 Video Meetings
             </div>
-          <% } %>
+            <div style="font-size: 13px; color: #e0f2fe; margin-bottom: 14px; line-height: 1.4;">
+              Host an instant group video call or join active rooms with friends!
+            </div>
+            <button onclick="startInstantMeeting()" style="width: 100%; background: #85ef47; border: 2px solid #1e293b; color: #1e293b; font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 900; font-size: 14px; padding: 10px; border-radius: 12px; cursor: pointer; box-shadow: 0 3px 0 #1e293b;">
+              Start Instant Meeting 🚀
+            </button>
+          </div>
+
+          <!-- Active Meetings Widget -->
+          <div class="sidebar-widget-card">
+            <div class="sidebar-widget-title">
+              <span>📹 Active Video Rooms</span>
+              <span style="font-size: 12px; color: #10b981; font-weight: 800;">● Live</span>
+            </div>
+            <div id="active-rooms-container">
+              <div style="font-size: 13px; color: #64748b; text-align: center; padding: 10px;">
+                No active meeting rooms right now. Click Start Instant Meeting above!
+              </div>
+            </div>
+          </div>
+
+          <!-- Online Friends Calling Panel -->
+          <div class="sidebar-widget-card">
+            <div class="sidebar-widget-title">
+              <span>👥 Friends Online</span>
+              <span style="font-size: 12px; color: #3b82f6; font-weight: 800;">Direct Call</span>
+            </div>
+            <div id="friends-calling-list">
+              <div style="font-size: 13px; color: #64748b; text-align: center; padding: 10px;">
+                Searching active friends...
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </div>
     </main>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/socketClient.js"></script>
+  <!-- Schedule Meeting Modal -->
+  <div id="schedule-meeting-modal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.7); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border: 2px solid #1e293b; border-radius: 24px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+        <div style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 20px; color: #1e293b;">
+          📅 Schedule Video Meeting
+        </div>
+        <button onclick="closeScheduleModal()" style="background: transparent; border: none; font-size: 20px; cursor: pointer; color: #64748b;">✕</button>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 13px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">Meeting Topic / Title</label>
+        <input type="text" id="meet-title-input" placeholder="e.g. Sudoku Duel Strategy Session" style="width: 100%; box-sizing: border-box; background: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; font-size: 14px; color: #1e293b; font-weight: 600;" />
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="font-size: 13px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 6px;">Scheduled Date & Time</label>
+        <input type="datetime-local" id="meet-time-input" style="width: 100%; box-sizing: border-box; background: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; font-size: 14px; color: #1e293b; font-weight: 600;" />
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button onclick="closeScheduleModal()" style="background: #f1f5f9; border: 1.5px solid #cbd5e1; color: #475569; font-weight: 700; padding: 10px 18px; border-radius: 12px; cursor: pointer;">Cancel</button>
+        <button onclick="submitScheduledMeeting()" style="background: #85ef47; border: 2px solid #1e293b; color: #1e293b; font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 900; padding: 10px 20px; border-radius: 12px; cursor: pointer; box-shadow: 0 3px 0 #1e293b;">Schedule & Post 🚀</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let selectedCategory = 'General';
 
@@ -396,6 +570,59 @@
       const wrapper = document.getElementById('media-input-wrapper');
       if (wrapper) {
         wrapper.style.display = wrapper.style.display === 'block' ? 'none' : 'block';
+      }
+    }
+
+    function openScheduleModal() {
+      const modal = document.getElementById('schedule-meeting-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeScheduleModal() {
+      const modal = document.getElementById('schedule-meeting-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitScheduledMeeting() {
+      const titleInput = document.getElementById('meet-title-input');
+      const timeInput = document.getElementById('meet-time-input');
+
+      const title = titleInput.value.trim();
+      const scheduledTime = timeInput.value;
+
+      if (!title || !scheduledTime) {
+        alert("Please provide both a meeting topic and scheduled date & time!");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/meetings/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, scheduledTime })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.post) {
+            renderNewPostInFeed(data.post);
+          }
+          closeScheduleModal();
+          titleInput.value = '';
+          timeInput.value = '';
+          fetchActiveMeetings();
+        } else {
+          alert("Failed to schedule meeting. Please try again.");
+        }
+      } catch (err) {
+        console.error("Schedule meeting error:", err);
+      }
+    }
+
+    function startInstantMeeting() {
+      const roomId = 'room_' + Math.random().toString(36).substring(2, 8);
+      if (typeof joinMeetingRoom === 'function') {
+        joinMeetingRoom(roomId, 'Instant Video Room');
       }
     }
 
@@ -427,6 +654,10 @@
         });
 
         if (res.ok) {
+          const data = await res.json();
+          if (data && data.post) {
+            renderNewPostInFeed(data.post);
+          }
           contentInput.value = '';
           imageInput.value = '';
           const wrapper = document.getElementById('media-input-wrapper');
@@ -440,6 +671,53 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Post Now 🚀';
       }
+    }
+
+    function renderNewPostInFeed(post) {
+      const emptyState = document.getElementById('feed-empty-state');
+      if (emptyState) emptyState.remove();
+
+      const feedContainer = document.getElementById('feed-container');
+      if (!feedContainer) return;
+      if (document.getElementById(`post-card-${post._id}`)) return;
+
+      const card = document.createElement('div');
+      card.className = 'post-card';
+      card.id = `post-card-${post._id}`;
+
+      const avatarContent = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? '' : (post.authorName || (post.author ? post.author.name : 'U')).charAt(0);
+      const avatarStyle = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? `background-image: url(${post.authorAvatarUrl || post.author.avatarUrl}); color: transparent;` : '';
+
+      card.innerHTML = `
+        <div class="post-card-header">
+          <a href="/profile/user/${post.authorUsername || (post.author ? post.author.username : '')}" class="post-author-left" style="text-decoration: none;">
+            <div class="post-avatar" style="${avatarStyle}">${avatarContent}</div>
+            <div>
+              <div class="post-author-name">${post.authorName || (post.author ? post.author.name : 'Matiks Player')}</div>
+              <div class="post-author-username">@${post.authorUsername || (post.author ? post.author.username : 'player')}</div>
+            </div>
+          </a>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="post-cat-badge">${post.category || 'General'}</span>
+            <span class="time-ago">Just now</span>
+          </div>
+        </div>
+        <div class="post-content-body">${post.content}</div>
+        ${post.image ? `<img src="${post.image}" class="post-image-attachment" alt="Attachment" onerror="this.style.display='none'" />` : ''}
+        ${post.category === 'Meeting' && post.roomId ? `<button class="room-join-btn" onclick="joinMeetingRoom('${post.roomId}', 'Video Meeting Room')" style="margin-bottom: 14px;">📹 Join Video Room Now</button>` : ''}
+        <div class="post-action-bar">
+          <button class="post-action-btn" id="like-btn-${post._id}" onclick="toggleLike('${post._id}')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            <span id="like-count-${post._id}">${post.likesCount || 0}</span> Likes
+          </button>
+          <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">💬 Comment</button>
+          <button class="post-action-btn" onclick="copyPostLink('${post._id}')">🚀 Share</button>
+        </div>
+      `;
+
+      feedContainer.prepend(card);
     }
 
     async function toggleLike(postId) {
@@ -475,78 +753,102 @@
       });
     }
 
-    // Real-Time Socket.IO Listeners for Feed Updates
-    if (typeof io !== 'undefined') {
-      const liveSocket = window.matiksSocket || io();
-      
-      liveSocket.on('new_post_published', (post) => {
-        const emptyState = document.getElementById('feed-empty-state');
-        if (emptyState) emptyState.remove();
+    // Fetch Active Meetings for Right Sidebar
+    async function fetchActiveMeetings() {
+      try {
+        const res = await fetch('/api/meetings/active');
+        if (res.ok) {
+          const meetings = await res.json();
+          const container = document.getElementById('active-rooms-container');
+          if (!container) return;
 
-        const feedContainer = document.getElementById('feed-container');
-        if (!feedContainer) return;
+          if (meetings.length === 0) {
+            container.innerHTML = `<div style="font-size: 13px; color: #64748b; text-align: center; padding: 10px;">No active meeting rooms right now. Click Start Instant Meeting above!</div>`;
+            return;
+          }
 
-        // Check if already present
-        if (document.getElementById(`post-card-${post._id}`)) return;
-
-        const card = document.createElement('div');
-        card.className = 'post-card';
-        card.id = `post-card-${post._id}`;
-
-        const avatarContent = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) 
-          ? '' 
-          : (post.authorName || (post.author ? post.author.name : 'U')).charAt(0);
-        const avatarStyle = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) 
-          ? `background-image: url(${post.authorAvatarUrl || post.author.avatarUrl}); color: transparent;` 
-          : '';
-
-        card.innerHTML = `
-          <div class="post-card-header">
-            <a href="/profile/user/${post.authorUsername || (post.author ? post.author.username : '')}" class="post-author-left" style="text-decoration: none;">
-              <div class="post-avatar" style="${avatarStyle}">
-                ${avatarContent}
-              </div>
-              <div>
-                <div class="post-author-name">${post.authorName || (post.author ? post.author.name : 'Matiks Player')}</div>
-                <div class="post-author-username">@${post.authorUsername || (post.author ? post.author.username : 'player')}</div>
-              </div>
-            </a>
-
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span class="post-cat-badge">${post.category || 'General'}</span>
-              <span class="time-ago">Just now</span>
+          container.innerHTML = meetings.map(m => `
+            <div class="room-item-card">
+              <div style="font-weight: 800; font-size: 14px; color: #0c4a6e; margin-bottom: 2px;">${m.title}</div>
+              <div style="font-size: 12px; color: #0369a1; font-weight: 600;">Host: @${m.hostUsername || 'Host'}</div>
+              <button class="room-join-btn" onclick="joinMeetingRoom('${m.roomId}', '${m.title}')">
+                📹 Join Call Now
+              </button>
             </div>
-          </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.warn("Fetch active meetings error:", e);
+      }
+    }
 
-          <div class="post-content-body">${post.content}</div>
+    // Fetch Friends for Calling Panel
+    async function fetchFriendsForCalling() {
+      try {
+        const res = await fetch('/api/friends/accepted');
+        if (res.ok) {
+          const friends = await res.json();
+          const container = document.getElementById('friends-calling-list');
+          if (!container) return;
 
-          ${post.image ? `<img src="${post.image}" class="post-image-attachment" alt="Attachment" onerror="this.style.display='none'" />` : ''}
+          if (!friends || friends.length === 0) {
+            container.innerHTML = `<div style="font-size: 13px; color: #64748b; text-align: center; padding: 10px;">No friends found. Add friends to call them!</div>`;
+            return;
+          }
 
-          <div class="post-action-bar">
-            <button class="post-action-btn" id="like-btn-${post._id}" onclick="toggleLike('${post._id}')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              <span id="like-count-${post._id}">${post.likesCount || 0}</span> Likes
-            </button>
+          container.innerHTML = friends.map(f => `
+            <div class="friend-call-item">
+              <div class="friend-call-left">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #4564C6; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                  ${(f.name || 'F').charAt(0)}
+                </div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 800; color: #1e293b;">${f.name}</div>
+                  <div style="font-size: 11px; color: #64748b;">@${f.username}</div>
+                </div>
+              </div>
+              <button class="call-btn-small" onclick="startFriendCall('${f._id}', '${f.name}', '${f.username}', 'video')">
+                📹 Call
+              </button>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.warn("Fetch friends for calling error:", e);
+      }
+    }
 
-            <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">
-              💬 Comment
-            </button>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchActiveMeetings();
+      fetchFriendsForCalling();
+    });
 
-            <button class="post-action-btn" onclick="copyPostLink('${post._id}')">
-              🚀 Share
-            </button>
-          </div>
-        `;
+    // Socket.IO Feed Listeners Binding
+    function bindFeedSocketListeners() {
+      const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
+      if (!socket) return;
 
-        feedContainer.prepend(card);
+      socket.off('new_post_published');
+      socket.on('new_post_published', (post) => {
+        renderNewPostInFeed(post);
       });
 
-      liveSocket.on('post_liked_update', (data) => {
+      socket.off('meeting_created');
+      socket.on('meeting_created', () => {
+        fetchActiveMeetings();
+      });
+
+      socket.off('post_liked_update');
+      socket.on('post_liked_update', (data) => {
         const countEl = document.getElementById(`like-count-${data.postId}`);
         if (countEl) countEl.textContent = data.likesCount;
       });
+    }
+
+    if (typeof window.getMatiksSocket === 'function') {
+      window.getMatiksSocket(bindFeedSocketListeners);
+    } else {
+      document.addEventListener('DOMContentLoaded', bindFeedSocketListeners);
     }
   </script>
 </body>

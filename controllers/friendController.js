@@ -271,3 +271,36 @@ exports.getPendingNotifications = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
+
+exports.getAcceptedFriends = async (req, res) => {
+  try {
+    const currentUser = req.user || await User.findOne();
+    if (!currentUser) return res.status(401).json({ error: "Unauthorized" });
+
+    const friendships = await Friend.find({
+      $or: [
+        { requester: currentUser._id, status: 'accepted' },
+        { recipient: currentUser._id, status: 'accepted' }
+      ]
+    })
+    .populate('requester', 'username name avatarUrl')
+    .populate('recipient', 'username name avatarUrl')
+    .lean();
+
+    const friends = friendships.map(f => {
+      const isReq = f.requester._id.toString() === currentUser._id.toString();
+      const friendObj = isReq ? f.recipient : f.requester;
+      return {
+        _id: friendObj._id.toString(),
+        name: friendObj.name,
+        username: friendObj.username,
+        avatarUrl: friendObj.avatarUrl
+      };
+    });
+
+    return res.json(friends);
+  } catch (err) {
+    console.error("Error in getAcceptedFriends:", err);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
