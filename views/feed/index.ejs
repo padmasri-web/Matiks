@@ -652,6 +652,10 @@
         });
 
         if (res.ok) {
+          const data = await res.json();
+          if (data && data.post) {
+            renderNewPostInFeed(data.post);
+          }
           contentInput.value = '';
           imageInput.value = '';
           const wrapper = document.getElementById('media-input-wrapper');
@@ -665,6 +669,53 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Post Now 🚀';
       }
+    }
+
+    function renderNewPostInFeed(post) {
+      const emptyState = document.getElementById('feed-empty-state');
+      if (emptyState) emptyState.remove();
+
+      const feedContainer = document.getElementById('feed-container');
+      if (!feedContainer) return;
+      if (document.getElementById(`post-card-${post._id}`)) return;
+
+      const card = document.createElement('div');
+      card.className = 'post-card';
+      card.id = `post-card-${post._id}`;
+
+      const avatarContent = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? '' : (post.authorName || (post.author ? post.author.name : 'U')).charAt(0);
+      const avatarStyle = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? `background-image: url(${post.authorAvatarUrl || post.author.avatarUrl}); color: transparent;` : '';
+
+      card.innerHTML = `
+        <div class="post-card-header">
+          <a href="/profile/user/${post.authorUsername || (post.author ? post.author.username : '')}" class="post-author-left" style="text-decoration: none;">
+            <div class="post-avatar" style="${avatarStyle}">${avatarContent}</div>
+            <div>
+              <div class="post-author-name">${post.authorName || (post.author ? post.author.name : 'Matiks Player')}</div>
+              <div class="post-author-username">@${post.authorUsername || (post.author ? post.author.username : 'player')}</div>
+            </div>
+          </a>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="post-cat-badge">${post.category || 'General'}</span>
+            <span class="time-ago">Just now</span>
+          </div>
+        </div>
+        <div class="post-content-body">${post.content}</div>
+        ${post.image ? `<img src="${post.image}" class="post-image-attachment" alt="Attachment" onerror="this.style.display='none'" />` : ''}
+        ${post.category === 'Meeting' && post.roomId ? `<button class="room-join-btn" onclick="joinMeetingRoom('${post.roomId}', 'Video Meeting Room')" style="margin-bottom: 14px;">📹 Join Video Room Now</button>` : ''}
+        <div class="post-action-bar">
+          <button class="post-action-btn" id="like-btn-${post._id}" onclick="toggleLike('${post._id}')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            <span id="like-count-${post._id}">${post.likesCount || 0}</span> Likes
+          </button>
+          <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">💬 Comment</button>
+          <button class="post-action-btn" onclick="copyPostLink('${post._id}')">🚀 Share</button>
+        </div>
+      `;
+
+      feedContainer.prepend(card);
     }
 
     async function toggleLike(postId) {
@@ -770,60 +821,32 @@
       fetchFriendsForCalling();
     });
 
-    // Socket.IO Feed Listeners
-    if (typeof io !== 'undefined') {
-      const liveSocket = window.matiksSocket || io();
-      
-      liveSocket.on('new_post_published', (post) => {
-        const emptyState = document.getElementById('feed-empty-state');
-        if (emptyState) emptyState.remove();
+    // Socket.IO Feed Listeners Binding
+    function bindFeedSocketListeners() {
+      const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
+      if (!socket) return;
 
-        const feedContainer = document.getElementById('feed-container');
-        if (!feedContainer) return;
-        if (document.getElementById(`post-card-${post._id}`)) return;
-
-        const card = document.createElement('div');
-        card.className = 'post-card';
-        card.id = `post-card-${post._id}`;
-
-        const avatarContent = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? '' : (post.authorName || (post.author ? post.author.name : 'U')).charAt(0);
-        const avatarStyle = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) ? `background-image: url(${post.authorAvatarUrl || post.author.avatarUrl}); color: transparent;` : '';
-
-        card.innerHTML = `
-          <div class="post-card-header">
-            <a href="/profile/user/${post.authorUsername || (post.author ? post.author.username : '')}" class="post-author-left" style="text-decoration: none;">
-              <div class="post-avatar" style="${avatarStyle}">${avatarContent}</div>
-              <div>
-                <div class="post-author-name">${post.authorName || (post.author ? post.author.name : 'Matiks Player')}</div>
-                <div class="post-author-username">@${post.authorUsername || (post.author ? post.author.username : 'player')}</div>
-              </div>
-            </a>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span class="post-cat-badge">${post.category || 'General'}</span>
-              <span class="time-ago">Just now</span>
-            </div>
-          </div>
-          <div class="post-content-body">${post.content}</div>
-          ${post.image ? `<img src="${post.image}" class="post-image-attachment" alt="Attachment" onerror="this.style.display='none'" />` : ''}
-          ${post.category === 'Meeting' && post.roomId ? `<button class="room-join-btn" onclick="joinMeetingRoom('${post.roomId}', 'Video Meeting Room')" style="margin-bottom: 14px;">📹 Join Video Room Now</button>` : ''}
-          <div class="post-action-bar">
-            <button class="post-action-btn" id="like-btn-${post._id}" onclick="toggleLike('${post._id}')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              <span id="like-count-${post._id}">${post.likesCount || 0}</span> Likes
-            </button>
-            <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">💬 Comment</button>
-            <button class="post-action-btn" onclick="copyPostLink('${post._id}')">🚀 Share</button>
-          </div>
-        `;
-
-        feedContainer.prepend(card);
+      socket.off('new_post_published');
+      socket.on('new_post_published', (post) => {
+        renderNewPostInFeed(post);
       });
 
-      liveSocket.on('meeting_created', () => {
+      socket.off('meeting_created');
+      socket.on('meeting_created', () => {
         fetchActiveMeetings();
       });
+
+      socket.off('post_liked_update');
+      socket.on('post_liked_update', (data) => {
+        const countEl = document.getElementById(`like-count-${data.postId}`);
+        if (countEl) countEl.textContent = data.likesCount;
+      });
+    }
+
+    if (typeof window.getMatiksSocket === 'function') {
+      window.getMatiksSocket(bindFeedSocketListeners);
+    } else {
+      document.addEventListener('DOMContentLoaded', bindFeedSocketListeners);
     }
   </script>
 </body>

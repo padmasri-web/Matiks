@@ -4,8 +4,19 @@
 (function() {
   if (typeof io === 'undefined') return;
 
-  const socket = io();
-  window.matiksSocket = socket;
+  if (!window.matiksSocket) {
+    window.matiksSocket = io();
+  }
+  const socket = window.matiksSocket;
+
+  window.getMatiksSocket = function(cb) {
+    if (window.matiksSocket) {
+      cb(window.matiksSocket);
+    } else if (typeof io !== 'undefined') {
+      window.matiksSocket = io();
+      cb(window.matiksSocket);
+    }
+  };
 
   let unreadNotificationsCount = 0;
 
