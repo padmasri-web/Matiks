@@ -56,7 +56,8 @@ exports.renderFindFriends = async (req, res) => {
     res.render('friends/find', {
       user: currentUser,
       suggestedUsers: usersWithStatus,
-      searchQuery: search
+      searchQuery: search,
+      page: 'find-friends'
     });
   } catch (err) {
     console.error("Error in renderFindFriends:", err);
@@ -151,6 +152,9 @@ exports.toggleFriendRequest = async (req, res) => {
       ]
     });
 
+    const io = req.app.get('io');
+    const userSockets = req.app.get('userSockets');
+
     if (!existingRel) {
       // Create new pending friend request
       await Friend.create({
@@ -158,6 +162,20 @@ exports.toggleFriendRequest = async (req, res) => {
         recipient: targetUserId,
         status: 'pending'
       });
+
+      // Emit real-time WebSocket notification to target user if connected
+      if (io && userSockets) {
+        const targetSocketId = userSockets.get(targetUserId.toString());
+        if (targetSocketId) {
+          io.to(targetSocketId).emit('friend_request_received', {
+            requesterId: currentUser._id.toString(),
+            requesterName: currentUser.name,
+            requesterUsername: currentUser.username,
+            avatarUrl: currentUser.avatarUrl
+          });
+        }
+      }
+
       return res.json({ status: 'pending_sent', message: 'Friend request sent' });
     }
 
@@ -165,6 +183,16 @@ exports.toggleFriendRequest = async (req, res) => {
       if (existingRel.requester.toString() === currentUser._id.toString()) {
         // Withdraw pending request
         await Friend.deleteOne({ _id: existingRel._id });
+
+        if (io && userSockets) {
+          const targetSocketId = userSockets.get(targetUserId.toString());
+          if (targetSocketId) {
+            io.to(targetSocketId).emit('friend_request_withdrawn', {
+              requesterId: currentUser._id.toString()
+            });
+          }
+        }
+
         return res.json({ status: 'none', message: 'Friend request withdrawn' });
       }
     }
@@ -195,12 +223,51 @@ exports.acceptFriendRequest = async (req, res) => {
     );
 
     if (rel) {
+      const io = req.app.get('io');
+      const userSockets = req.app.get('userSockets');
+      if (io && userSockets) {
+        const requesterSocketId = userSockets.get(requesterId.toString());
+        if (requesterSocketId) {
+          io.to(requesterSocketId).emit('friend_request_accepted', {
+            recipientId: currentUser._id.toString(),
+            recipientName: currentUser.name,
+            recipientUsername: currentUser.username
+          });
+        }
+      }
+
       return res.json({ status: 'friends', message: 'Friend request accepted' });
     } else {
       return res.status(400).json({ error: 'No pending request found' });
     }
   } catch (err) {
     console.error("Error in acceptFriendRequest:", err);
+    res.status(500).json({ error: "Server Error" });
+  }
+};
+
+exports.getPendingNotifications = async (req, res) => {
+  try {
+    const currentUser = req.user || await User.findOne();
+    if (!currentUser) return res.status(401).json({ error: "Unauthorized" });
+
+    const pendingRequests = await Friend.find({
+      recipient: currentUser._id,
+      status: 'pending'
+    }).populate('requester', 'username name avatarUrl').lean();
+
+    const notifications = pendingRequests.map(r => ({
+      id: r._id,
+      requesterId: r.requester ? r.requester._id.toString() : '',
+      requesterUsername: r.requester ? r.requester.username : 'User',
+      requesterName: r.requester ? r.requester.name : 'User',
+      avatarUrl: r.requester ? r.requester.avatarUrl : null,
+      createdAt: r.createdAt
+    }));
+
+    return res.json(notifications);
+  } catch (err) {
+    console.error("Error in getPendingNotifications:", err);
     res.status(500).json({ error: "Server Error" });
   }
 };

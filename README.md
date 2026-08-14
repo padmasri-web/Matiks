@@ -1,3 +1,4 @@
+# Mathlete
 # 🧮 Mathlete (Matiks)
 
 A modern, full-stack web application designed for interactive mathematical, logic, arcade, and puzzle gaming. **Mathlete** combines glassmorphic UI aesthetics, gamified rank progression, real-time score calculation, daily challenge automation, and social friend management into a unified learning and gaming portal.

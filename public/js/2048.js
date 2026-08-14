@@ -82,12 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let isMoving = false;
 
   // 2-Minute Timer State
-  let timerSeconds = 10;
+  let timerSeconds = 120;
   let timerInterval = null;
 
   function startTimer() {
     clearInterval(timerInterval);
-    timerSeconds = 10;
+    timerSeconds = 120;
     updateTimerDisplay();
 
     timerInterval = setInterval(() => {
