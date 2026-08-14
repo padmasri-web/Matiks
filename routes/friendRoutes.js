@@ -10,5 +10,6 @@ router.get('/profile/user/:username', friendController.renderPublicProfile);
 router.post('/api/friends/request', friendController.toggleFriendRequest);
 router.post('/api/friends/accept', friendController.acceptFriendRequest);
 router.get('/api/notifications/pending', friendController.getPendingNotifications);
+router.get('/api/friends/accepted', friendController.getAcceptedFriends);
 
 module.exports = router;
