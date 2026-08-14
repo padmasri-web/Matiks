@@ -554,8 +554,6 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/socketClient.js"></script>
   <script>
     let selectedCategory = 'General';
 
@@ -605,6 +603,10 @@
         });
 
         if (res.ok) {
+          const data = await res.json();
+          if (data && data.post) {
+            renderNewPostInFeed(data.post);
+          }
           closeScheduleModal();
           titleInput.value = '';
           timeInput.value = '';
