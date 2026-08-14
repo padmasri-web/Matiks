@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (xpCount) xpCount.textContent = `${currentXp} XP`;
 
       // Update profile preview
-      userProfileName.textContent = user.name;
-      userProfileUsername.textContent = `@${user.username}`;
-      userAvatarInitial.textContent = user.name.charAt(0);
+      if (userProfileName) userProfileName.textContent = user.name;
+      if (userProfileUsername) userProfileUsername.textContent = `@${user.username}`;
+      if (userAvatarInitial && user.name) userAvatarInitial.textContent = user.name.charAt(0);
 
       // Render friends list
       renderFriends(user.onlineFriends);
@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render online friends list
   function renderFriends(friends) {
+    if (!friendsList || !friends) return;
     friendsList.innerHTML = '';
     friends.forEach((friend, idx) => {
       const item = document.createElement('div');
@@ -306,8 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update Daily progress HTML bar
   function updateDailyProgressHTML() {
     const percent = Math.min((challengesCompleted / totalChallenges) * 100, 100);
-    dailyProgressFill.style.width = `${percent}%`;
-    dailyProgressLabel.textContent = `${challengesCompleted}/${totalChallenges}`;
+    if (dailyProgressFill) dailyProgressFill.style.width = `${percent}%`;
+    if (dailyProgressLabel) dailyProgressLabel.textContent = `${challengesCompleted}/${totalChallenges}`;
   }
 
   // Category card tab triggers

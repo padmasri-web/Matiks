@@ -133,13 +133,29 @@ document.addEventListener('DOMContentLoaded', () => {
     timerTextEl.textContent = `${formattedMin}:${formattedSec}`;
   }
 
-  function handleGameOver() {
+  async function handleGameOver() {
     stopTimer();
     isGameOver = true;
     playLossSound();
     if (gameOverModalEl && typeof bootstrap !== 'undefined') {
       const modal = new bootstrap.Modal(gameOverModalEl);
       modal.show();
+    }
+
+    try {
+      await fetch('/api/user/gamelog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'Puzzle',
+          mode: 'Lights Out',
+          playerScore: 0,
+          opponentName: 'AI Grid Master',
+          opponentScore: 100
+        })
+      });
+    } catch (err) {
+      console.warn("Failed to log Lights Out loss game log:", err.message);
     }
   }
 
@@ -238,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Win Condition check after every player click
-  function checkWin() {
+  async function checkWin() {
     if (isGameOver) return;
     const activeLights = gameBoard.querySelectorAll('.btn-warning');
     if (activeLights.length === 0) {
@@ -248,6 +264,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (winModalEl && typeof bootstrap !== 'undefined') {
         const modal = new bootstrap.Modal(winModalEl);
         modal.show();
+      }
+
+      try {
+        await fetch('/api/user/gamelog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: 'Puzzle',
+            mode: 'Lights Out',
+            playerScore: 100,
+            opponentName: 'AI Grid Master',
+            opponentScore: 0
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to log Lights Out win game log:", err.message);
       }
     }
   }

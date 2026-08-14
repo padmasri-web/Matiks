@@ -20,6 +20,7 @@ const snakeGameRoutes = require('./routes/snakeGameRoutes');
 const authRoutes = require('./routes/authRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const ticTacToeRoutes = require('./routes/tic-tac-toe_Routes');
+const postRoutes = require('./routes/postRoutes');
 
 // Import models for seeding
 const User = require('./models/Profile');
@@ -28,9 +29,56 @@ const Friend = require('./models/Friend');
 
 // Import utilities
 const { initDailyChallengeCron } = require('./utils/cronJobs');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = new Server(server);
+app.set('io', io);
+
+// Socket.IO User Presence & Real-Time Event Handlers
+const userSockets = new Map();
+app.set('userSockets', userSockets);
+
+io.on('connection', (socket) => {
+  socket.on('join_user_room', (userId) => {
+    if (userId) {
+      const uIdStr = userId.toString();
+      userSockets.set(uIdStr, socket.id);
+      socket.userId = uIdStr;
+      socket.join(`user_${uIdStr}`);
+      console.log(`⚡ WebSocket: User ${uIdStr} connected & joined room user_${uIdStr}`);
+    }
+  });
+
+  socket.on('send_friend_request', (data) => {
+    if (data && data.targetUserId) {
+      const targetSocketId = userSockets.get(data.targetUserId.toString());
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('friend_request_received', data);
+      }
+    }
+  });
+
+  socket.on('accept_friend_request', (data) => {
+    if (data && data.requesterId) {
+      const requesterSocketId = userSockets.get(data.requesterId.toString());
+      if (requesterSocketId) {
+        io.to(requesterSocketId).emit('friend_request_accepted', data);
+      }
+    }
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.userId) {
+      userSockets.delete(socket.userId);
+      console.log(`⚡ WebSocket: User ${socket.userId} disconnected`);
+    }
+  });
+});
+
+const PORT = process.env.PORT || 6700;
 
 // Connect to MongoDB
 connectDB();
@@ -49,7 +97,7 @@ const seedData = async () => {
     if (userCount === 0) {
       const crypto = require('crypto');
       const seedPasswordHash = crypto.pbkdf2Sync('password', 'salt', 1000, 64, 'sha512').toString('hex');
-      
+
       await User.create({
         name: 'Jhalak Yadav',
         username: 'jhalak_yadav',
@@ -222,6 +270,7 @@ app.use('/api/challenges', ensureAuthenticated, challengeRoutes);
 // Protected Game & Friend Routes
 app.use('/', ensureAuthenticated, gameRoutes);
 app.use('/', ensureAuthenticated, friendRoutes);
+app.use('/', ensureAuthenticated, postRoutes);
 
 // Protected Dashboard Arena Page Route
 app.get('/', ensureAuthenticated, (req, res) => {
@@ -248,7 +297,7 @@ app.get('/profile', ensureAuthenticated, async (req, res) => {
         { recipient: user._id, status: 'accepted' }
       ]
     });
-    
+
     res.render('profile', { user, lastChallenge, gameLogs, friendsCount });
   } catch (err) {
     console.warn("Failed to retrieve profile data from MongoDB:", err);
@@ -298,6 +347,6 @@ app.get('/{*splat}', (req, res) => {
 });
 
 // Start listening
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Matiks Server listening on port ${PORT}`);
 });

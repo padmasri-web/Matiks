@@ -108,8 +108,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/socket/socketInit.js"></script>
-  <script src="/js/socket/friendEvents.js"></script>
+  <script src="/js/socketClient.js"></script>
   <script>
     function copyProfileUrl() {
       const url = window.location.origin + '/profile';
@@ -147,6 +146,11 @@
     }
 
     async function toggleFriend(targetUserId, btn) {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = '...';
+
       try {
         const res = await fetch('/api/friends/request', {
           method: 'POST',
@@ -159,20 +163,30 @@
             btn.className = 'find-action-btn withdraw';
             btn.textContent = 'Withdraw';
 
-            if (window.socket) {
-              window.socket.emit('send_friend_request', { targetUserId, senderName: '<%= user.username %>' });
+            const s = window.matiksSocket || window.socket;
+            if (s) {
+              s.emit('send_friend_request', { targetUserId, senderName: '<%= user.username %>' });
             }
           } else {
             btn.className = 'find-action-btn';
             btn.textContent = '+ Add';
           }
+        } else {
+          btn.textContent = originalText;
         }
       } catch (err) {
         console.error("Error toggling friend request:", err);
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
       }
     }
 
     async function acceptFriend(requesterId, btn) {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = '...';
+
       try {
         const res = await fetch('/api/friends/accept', {
           method: 'POST',
@@ -182,9 +196,19 @@
         if (res.ok) {
           btn.className = 'find-action-btn friends';
           btn.textContent = 'Friends ✓';
+
+          const s = window.matiksSocket || window.socket;
+          if (s) {
+            s.emit('accept_friend_request', { requesterId });
+          }
+        } else {
+          btn.textContent = 'Accept';
         }
       } catch (err) {
         console.error("Error accepting friend request:", err);
+        btn.textContent = 'Accept';
+      } finally {
+        btn.disabled = false;
       }
     }
   </script>

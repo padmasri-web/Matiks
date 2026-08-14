@@ -4,8 +4,9 @@
       <img src="/assets/svg/logo.svg" alt="Matiks Logo" id="matiks-logo">
     </div>
 
+    <% const activePage = typeof page !== 'undefined' ? page : 'arena'; %>
     <nav class="nav-links" id="sidebar-menu">
-      <a href="/" class="nav-item active" id="nav-arena">
+      <a href="/" class="nav-item <%= (activePage === 'arena') ? 'active' : '' %>" id="nav-arena">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M14.5 17.5L3 6" />
@@ -28,14 +29,14 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+          <path d="M18 9h1.5a2.5 2.5 0 0 1 0-5H18" />
           <path d="M4 22h16" />
           <path d="M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34" />
           <path d="M12 2a6 6 0 0 1 6 6v3c0 3.3-2.7 6-6 6s-6-2.7-6-6V8a6 6 0 0 1 6-6z" />
         </svg>
         <span>Compete</span>
       </a>
-      <a href="javascript:void(0)" class="nav-item" id="nav-feed" onclick="openComingSoonModal(event, 'Feed')">
+      <a href="/feed" class="nav-item <%= (activePage === 'feed') ? 'active' : '' %>" id="nav-feed">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -54,7 +55,7 @@
         </svg>
         <span>Group Play</span>
       </a>
-      <a href="#" class="nav-item" id="nav-more">
+      <a href="/friends/find" class="nav-item <%= (activePage === 'find-friends') ? 'active' : '' %>" id="nav-more">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -62,7 +63,7 @@
           <circle cx="12" cy="12" r="1.5" fill="currentColor" />
           <circle cx="16" cy="12" r="1.5" fill="currentColor" />
         </svg>
-        <span>Message</span>
+        <span>Find Friends</span>
       </a>
       <a href="/auth/logout" class="nav-item" id="nav-logout">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"

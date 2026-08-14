@@ -220,8 +220,7 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/socket/socketInit.js"></script>
-  <script src="/js/socket/friendEvents.js"></script>
+  <script src="/js/socketClient.js"></script>
   <script>
     function copyProfileUrl() {
       const url = window.location.href;
@@ -233,6 +232,11 @@
     }
 
     async function toggleFriend(targetUserId, btn) {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = '...';
+
       try {
         const res = await fetch('/api/friends/request', {
           method: 'POST',
@@ -247,8 +251,9 @@
             btn.style.color = '#ffffff';
             btn.textContent = 'WITHDRAW';
 
-            if (window.socket) {
-              window.socket.emit('send_friend_request', { targetUserId, senderName: '<%= currentUser.username %>' });
+            const s = window.matiksSocket || window.socket;
+            if (s) {
+              s.emit('send_friend_request', { targetUserId, senderName: '<%= currentUser.username %>' });
             }
           } else {
             btn.style.background = '#93f560';
@@ -256,15 +261,21 @@
             btn.style.color = '#1e293b';
             btn.textContent = '+ ADD FRIEND';
           }
+        } else {
+          btn.textContent = originalText;
         }
       } catch (err) {
         console.error("Error toggling friend:", err);
+        btn.textContent = originalText;
+      } finally {
+        btn.disabled = false;
       }
     }
 
     function initiateChallenge(targetUserId, username) {
-      if (window.socket) {
-        window.socket.emit('invite_duel', { opponentId: targetUserId, gameMode: 'Sprint Duels' });
+      const s = window.matiksSocket || window.socket;
+      if (s) {
+        s.emit('invite_duel', { opponentId: targetUserId, gameMode: 'Sprint Duels' });
         alert(`Challenge invitation sent to @${username}!`);
       } else {
         alert(`Inviting @${username} to a live duel challenge...`);

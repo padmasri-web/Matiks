@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matiks - Community Feed</title>
+  <meta name="description" content="Share game highlights, high scores, puzzle solutions, and connect with the Matiks gaming community in real time.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/profile.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .feed-layout {
+      width: 100%;
+      max-width: 880px;
+      margin: 0 auto 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    /* Top Post Creation Box */
+    .create-post-card {
+      background: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    }
+    .create-post-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .create-post-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #4564C6;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+      background-size: cover;
+      background-position: center;
+    }
+    .post-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 14px 18px;
+      color: #1e293b;
+      font-family: var(--font-main, 'Inter', sans-serif);
+      font-size: 15px;
+      font-weight: 500;
+      resize: vertical;
+      min-height: 96px;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .post-textarea:focus {
+      border-color: #85ef47;
+      box-shadow: 0 0 0 3px rgba(133, 239, 71, 0.25);
+    }
+    .category-pills-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .cat-pill {
+      background: #f8fafc;
+      border: 2px solid #1e293b;
+      color: #1e293b;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #1e293b;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .cat-pill:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 #1e293b;
+    }
+    .cat-pill.active {
+      background: #85ef47;
+      border-color: #1e293b;
+      color: #1e293b;
+      box-shadow: 0 3px 0 #1e293b;
+    }
+    .media-input-wrapper {
+      margin-top: 14px;
+      display: none;
+    }
+    .media-input-wrapper input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 14px;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .create-post-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .post-submit-btn {
+      background: #85ef47;
+      border: 2px solid #1e293b;
+      color: #1e293b;
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 900;
+      font-size: 15px;
+      padding: 10px 26px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #1e293b;
+      transition: all 0.15s ease;
+    }
+    .post-submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 #1e293b;
+    }
+    .post-submit-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #1e293b;
+    }
+    
+    /* Post Cards */
+    .post-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+      animation: slideInDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .post-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .post-author-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .post-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #4564C6;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 19px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #ffffff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+    }
+    .post-author-name {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 16px;
+      color: #1e293b;
+    }
+    .post-author-username {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .post-cat-badge {
+      background: #f1f5f9;
+      color: #3b82f6;
+      border: 1.5px solid #cbd5e1;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .post-content-body {
+      font-size: 15px;
+      color: #1e293b;
+      font-weight: 500;
+      line-height: 1.6;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+    .post-image-attachment {
+      width: 100%;
+      max-height: 460px;
+      object-fit: cover;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .post-action-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-top: 1.5px solid #f1f5f9;
+      padding-top: 14px;
+    }
+    .post-action-btn {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 8px 16px;
+      border-radius: 12px;
+    }
+    .post-action-btn:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .post-action-btn.liked {
+      background: #fff1f2;
+      border-color: #fda4af;
+      color: #e11d48;
+    }
+    .post-action-btn.liked svg {
+      fill: #e11d48;
+      stroke: #e11d48;
+    }
+    .time-ago {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Sidebar Navigation -->
+    <%- include('../dashboard/leftbar') %>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar Header -->
+      <%- include('../dashboard/navbar') %>
+
+      <div class="feed-layout">
+        
+        <!-- Top Create Post Card -->
+        <div class="create-post-card">
+          <div class="create-post-header">
+            <div class="create-post-avatar" style="<%= user.avatarUrl ? 'background-image: url(' + user.avatarUrl + '); color: transparent;' : '' %>">
+              <%= user.avatarUrl ? '' : user.name.charAt(0) %>
+            </div>
+            <div>
+              <div style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 20px; color: #1e293b; margin-bottom: 2px;">
+                Community Feed
+              </div>
+              <div style="font-size: 13px; color: #64748b; font-weight: 600;">
+                Share your duel highlights, record scores, & puzzle solutions live!
+              </div>
+            </div>
+          </div>
+
+          <textarea id="post-content-input" class="post-textarea" placeholder="What's on your mind? Share a duel highlight, record score, or puzzle tip..."></textarea>
+
+          <!-- Category Selection Pills -->
+          <div class="category-pills-row" id="category-pills">
+            <span class="cat-pill active" data-cat="General">💬 General</span>
+            <span class="cat-pill" data-cat="Highlight">🎯 Highlight</span>
+            <span class="cat-pill" data-cat="Record">🔥 Record</span>
+            <span class="cat-pill" data-cat="Solution">💡 Solution</span>
+            <span class="cat-pill" onclick="toggleMediaInput()">🖼️ Add Image URL</span>
+          </div>
+
+          <!-- Optional Media Image Input -->
+          <div class="media-input-wrapper" id="media-input-wrapper">
+            <input type="text" id="post-image-input" placeholder="Paste image or screenshot URL (e.g. https://...)" />
+          </div>
+
+          <div class="create-post-actions">
+            <span style="font-size: 13px; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <span style="color: #10b981; font-weight: 800;">●</span> Broadcasts live via WebSockets
+            </span>
+            <button class="post-submit-btn" id="submit-post-btn" onclick="publishPost()">
+              Post Now 🚀
+            </button>
+          </div>
+        </div>
+
+        <!-- Feed Stream List Container -->
+        <div id="feed-container" style="display: flex; flex-direction: column; gap: 20px;">
+          <% if (posts && posts.length > 0) { %>
+            <% posts.forEach(function(p) { %>
+              <div class="post-card" id="post-card-<%= p._id %>">
+                <div class="post-card-header">
+                  <a href="/profile/user/<%= p.authorUsername || (p.author ? p.author.username : '') %>" class="post-author-left" style="text-decoration: none;">
+                    <div class="post-avatar" style="<%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? 'background-image: url(' + (p.authorAvatarUrl || p.author.avatarUrl) + '); color: transparent;' : '' %>">
+                      <%= (p.authorAvatarUrl || (p.author && p.author.avatarUrl)) ? '' : (p.authorName || (p.author ? p.author.name : 'U')).charAt(0) %>
+                    </div>
+                    <div>
+                      <div class="post-author-name"><%= p.authorName || (p.author ? p.author.name : 'Matiks Player') %></div>
+                      <div class="post-author-username">@<%= p.authorUsername || (p.author ? p.author.username : 'player') %></div>
+                    </div>
+                  </a>
+
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="post-cat-badge"><%= p.category || 'General' %></span>
+                    <span class="time-ago"><%= new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                  </div>
+                </div>
+
+                <div class="post-content-body"><%= p.content %></div>
+
+                <% if (p.image) { %>
+                  <img src="<%= p.image %>" class="post-image-attachment" alt="Post Attachment" onerror="this.style.display='none'" />
+                <% } %>
+
+                <div class="post-action-bar">
+                  <button class="post-action-btn <%= p.isLiked ? 'liked' : '' %>" id="like-btn-<%= p._id %>" onclick="toggleLike('<%= p._id %>')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="<%= p.isLiked ? '#e11d48' : 'none' %>" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    <span id="like-count-<%= p._id %>"><%= p.likesCount || 0 %></span> Likes
+                  </button>
+
+                  <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">
+                    💬 Comment
+                  </button>
+
+                  <button class="post-action-btn" onclick="copyPostLink('<%= p._id %>')">
+                    🚀 Share
+                  </button>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div id="feed-empty-state" style="background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 20px; padding: 44px; text-align: center; color: #64748b; font-weight: 600;">
+              No posts yet. Be the first to publish a post to the community!
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socketClient.js"></script>
+  <script>
+    let selectedCategory = 'General';
+
+    // Handle category pill toggling
+    document.querySelectorAll('.cat-pill[data-cat]').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.cat-pill[data-cat]').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        selectedCategory = pill.getAttribute('data-cat');
+      });
+    });
+
+    function toggleMediaInput() {
+      const wrapper = document.getElementById('media-input-wrapper');
+      if (wrapper) {
+        wrapper.style.display = wrapper.style.display === 'block' ? 'none' : 'block';
+      }
+    }
+
+    async function publishPost() {
+      const contentInput = document.getElementById('post-content-input');
+      const imageInput = document.getElementById('post-image-input');
+      const submitBtn = document.getElementById('submit-post-btn');
+
+      const content = contentInput.value.trim();
+      const image = imageInput.value.trim();
+
+      if (!content) {
+        alert("Please write something before publishing your post!");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Publishing...';
+
+      try {
+        const res = await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            image: image || null,
+            category: selectedCategory
+          })
+        });
+
+        if (res.ok) {
+          contentInput.value = '';
+          imageInput.value = '';
+          const wrapper = document.getElementById('media-input-wrapper');
+          if (wrapper) wrapper.style.display = 'none';
+        } else {
+          alert("Failed to publish post. Please try again.");
+        }
+      } catch (err) {
+        console.error("Publish post error:", err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Post Now 🚀';
+      }
+    }
+
+    async function toggleLike(postId) {
+      const btn = document.getElementById(`like-btn-${postId}`);
+      if (!btn) return;
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/like`, {
+          method: 'POST'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const countEl = document.getElementById(`like-count-${postId}`);
+          if (countEl) countEl.textContent = data.likesCount;
+          
+          if (data.isLiked) {
+            btn.classList.add('liked');
+            btn.querySelector('svg').setAttribute('fill', '#e11d48');
+          } else {
+            btn.classList.remove('liked');
+            btn.querySelector('svg').setAttribute('fill', 'none');
+          }
+        }
+      } catch (err) {
+        console.error("Toggle like error:", err);
+      }
+    }
+
+    function copyPostLink(postId) {
+      const url = window.location.origin + '/feed#' + postId;
+      navigator.clipboard.writeText(url).then(() => {
+        alert("Post link copied to clipboard!");
+      });
+    }
+
+    // Real-Time Socket.IO Listeners for Feed Updates
+    if (typeof io !== 'undefined') {
+      const liveSocket = window.matiksSocket || io();
+      
+      liveSocket.on('new_post_published', (post) => {
+        const emptyState = document.getElementById('feed-empty-state');
+        if (emptyState) emptyState.remove();
+
+        const feedContainer = document.getElementById('feed-container');
+        if (!feedContainer) return;
+
+        // Check if already present
+        if (document.getElementById(`post-card-${post._id}`)) return;
+
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.id = `post-card-${post._id}`;
+
+        const avatarContent = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) 
+          ? '' 
+          : (post.authorName || (post.author ? post.author.name : 'U')).charAt(0);
+        const avatarStyle = (post.authorAvatarUrl || (post.author && post.author.avatarUrl)) 
+          ? `background-image: url(${post.authorAvatarUrl || post.author.avatarUrl}); color: transparent;` 
+          : '';
+
+        card.innerHTML = `
+          <div class="post-card-header">
+            <a href="/profile/user/${post.authorUsername || (post.author ? post.author.username : '')}" class="post-author-left" style="text-decoration: none;">
+              <div class="post-avatar" style="${avatarStyle}">
+                ${avatarContent}
+              </div>
+              <div>
+                <div class="post-author-name">${post.authorName || (post.author ? post.author.name : 'Matiks Player')}</div>
+                <div class="post-author-username">@${post.authorUsername || (post.author ? post.author.username : 'player')}</div>
+              </div>
+            </a>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="post-cat-badge">${post.category || 'General'}</span>
+              <span class="time-ago">Just now</span>
+            </div>
+          </div>
+
+          <div class="post-content-body">${post.content}</div>
+
+          ${post.image ? `<img src="${post.image}" class="post-image-attachment" alt="Attachment" onerror="this.style.display='none'" />` : ''}
+
+          <div class="post-action-bar">
+            <button class="post-action-btn" id="like-btn-${post._id}" onclick="toggleLike('${post._id}')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <span id="like-count-${post._id}">${post.likesCount || 0}</span> Likes
+            </button>
+
+            <button class="post-action-btn" onclick="alert('Comment feature arriving in next update!')">
+              💬 Comment
+            </button>
+
+            <button class="post-action-btn" onclick="copyPostLink('${post._id}')">
+              🚀 Share
+            </button>
+          </div>
+        `;
+
+        feedContainer.prepend(card);
+      });
+
+      liveSocket.on('post_liked_update', (data) => {
+        const countEl = document.getElementById(`like-count-${data.postId}`);
+        if (countEl) countEl.textContent = data.likesCount;
+      });
+    }
+  </script>
+</body>
+</html>
