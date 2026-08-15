@@ -3,10 +3,9 @@
  * Works globally across all pages & game views!
  */
 (function() {
-  // Global WebRTC State
   const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
   let localStream = null;
-  let peerConnections = {}; // socketId -> RTCPeerConnection (mesh for group meetings & 1-on-1)
+  let peerConnections = {}; // targetKey -> RTCPeerConnection
   let activeTargetSocketId = null;
   let activeTargetUserId = null;
   let currentCallRoomId = null;
@@ -37,6 +36,27 @@
     `;
 
     overlay.innerHTML = `
+      <style>
+        @media (max-width: 600px) {
+          #matiks-call-overlay {
+            bottom: 12px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: calc(100% - 24px) !important;
+            max-width: 100% !important;
+          }
+          #video-grid-container {
+            min-height: 200px !important;
+            max-height: 280px !important;
+          }
+          #local-video-pip {
+            width: 70px !important;
+            height: 90px !important;
+            bottom: 8px !important;
+            right: 8px !important;
+          }
+        }
+      </style>
       <!-- Call Header -->
       <div id="call-modal-header" style="background: #1e293b; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid rgba(255,255,255,0.1); cursor: move; user-select: none;">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -88,56 +108,67 @@
       return localStream;
     } catch (err) {
       console.warn("Could not access camera/mic:", err.message);
+      // Fallback: try audio only if video fails
+      if (video) {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+          return localStream;
+        } catch (audioErr) {
+          console.warn("Audio fallback failed:", audioErr.message);
+        }
+      }
       alert("Camera or Microphone access failed. Please check permissions!");
       return null;
     }
   }
 
   // Create PeerConnection helper
-  function createPeerConnection(targetSocketId) {
-    if (peerConnections[targetSocketId]) return peerConnections[targetSocketId];
+  function createPeerConnection(targetKey, targetSocketId = null, targetUserId = null) {
+    if (peerConnections[targetKey]) return peerConnections[targetKey];
 
     const pc = new RTCPeerConnection(iceServers);
-    peerConnections[targetSocketId] = pc;
+    peerConnections[targetKey] = pc;
 
     if (localStream) {
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     }
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && window.matiksSocket) {
-        window.matiksSocket.emit('ice_candidate', {
+      if (event.candidate && (window.matiksSocket || (typeof io !== 'undefined'))) {
+        const s = window.matiksSocket || io();
+        s.emit('ice_candidate', {
           candidate: event.candidate,
-          targetSocketId
+          targetSocketId: targetSocketId || (targetKey.startsWith('socket_') ? targetKey.replace('socket_', '') : null),
+          targetUserId: targetUserId || (targetKey.startsWith('user_') ? targetKey.replace('user_', '') : activeTargetUserId)
         });
       }
     };
 
     pc.ontrack = (event) => {
-      renderRemoteVideoStream(targetSocketId, event.streams[0]);
+      renderRemoteVideoStream(targetKey, event.streams[0]);
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') {
-        removeRemoteVideo(targetSocketId);
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
+        removeRemoteVideo(targetKey);
       }
     };
 
     return pc;
   }
 
-  function renderRemoteVideoStream(socketId, stream) {
+  function renderRemoteVideoStream(targetKey, stream) {
     const wrapper = document.getElementById('remote-videos-wrapper');
     if (!wrapper) return;
 
-    let vidContainer = document.getElementById(`remote-vid-box-${socketId}`);
+    let vidContainer = document.getElementById(`remote-vid-box-${targetKey}`);
     if (!vidContainer) {
       vidContainer = document.createElement('div');
-      vidContainer.id = `remote-vid-box-${socketId}`;
+      vidContainer.id = `remote-vid-box-${targetKey}`;
       vidContainer.style.cssText = 'flex: 1; min-width: 140px; height: 220px; background: #0f172a; border-radius: 14px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.15); position: relative;';
       
       const vidEl = document.createElement('video');
-      vidEl.id = `remote-vid-${socketId}`;
+      vidEl.id = `remote-vid-${targetKey}`;
       vidEl.autoplay = true;
       vidEl.playsinline = true;
       vidEl.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
@@ -146,16 +177,16 @@
       wrapper.appendChild(vidContainer);
     }
 
-    const videoEl = document.getElementById(`remote-vid-${socketId}`);
+    const videoEl = document.getElementById(`remote-vid-${targetKey}`);
     if (videoEl) videoEl.srcObject = stream;
   }
 
-  function removeRemoteVideo(socketId) {
-    const vidContainer = document.getElementById(`remote-vid-box-${socketId}`);
+  function removeRemoteVideo(targetKey) {
+    const vidContainer = document.getElementById(`remote-vid-box-${targetKey}`);
     if (vidContainer) vidContainer.remove();
-    if (peerConnections[socketId]) {
-      peerConnections[socketId].close();
-      delete peerConnections[socketId];
+    if (peerConnections[targetKey]) {
+      try { peerConnections[targetKey].close(); } catch(e) {}
+      delete peerConnections[targetKey];
     }
   }
 
@@ -172,14 +203,14 @@
     const stream = await initLocalStream(callType === 'video', true);
     if (!stream) return;
 
-    // Fetch user profile to send caller info
     fetch('/api/user/profile')
       .then(res => res.json())
       .then(async (currentUser) => {
-        const socket = window.matiksSocket;
+        const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
         if (!socket) return;
 
-        const pc = createPeerConnection('direct_peer');
+        const targetKey = `user_${targetUserId}`;
+        const pc = createPeerConnection(targetKey, null, targetUserId);
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
@@ -191,7 +222,8 @@
           callType,
           offer
         });
-      });
+      })
+      .catch(err => console.warn("Fetch profile error in startFriendCall:", err));
   };
 
   // Public Methods: Join Group Meeting Room
@@ -210,7 +242,7 @@
     fetch('/api/user/profile')
       .then(res => res.json())
       .then(user => {
-        const socket = window.matiksSocket;
+        const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
         if (socket) {
           socket.emit('join_video_room', {
             roomId,
@@ -219,7 +251,8 @@
             userUsername: user.username
           });
         }
-      });
+      })
+      .catch(err => console.warn("Fetch profile error in joinMeetingRoom:", err));
   };
 
   // Call Controls
@@ -264,7 +297,7 @@
   };
 
   window.endCall = function() {
-    const socket = window.matiksSocket;
+    const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
     if (socket) {
       if (currentCallRoomId) {
         socket.emit('leave_video_room');
@@ -273,16 +306,14 @@
       }
     }
 
-    // Stop local tracks
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
       localStream = null;
     }
 
-    // Close all PeerConnections
-    Object.keys(peerConnections).forEach(id => {
-      peerConnections[id].close();
-      delete peerConnections[id];
+    Object.keys(peerConnections).forEach(key => {
+      try { peerConnections[key].close(); } catch(e) {}
+      delete peerConnections[key];
     });
 
     const wrapper = document.getElementById('remote-videos-wrapper');
@@ -297,89 +328,126 @@
   };
 
   // Socket.IO Listeners Setup for WebRTC Signaling
-  document.addEventListener('DOMContentLoaded', () => {
-    injectCallModalHTML();
+  function setupWebRTCSocketListeners(socket) {
+    if (!socket || socket._webrtcListenersBound) return;
+    socket._webrtcListenersBound = true;
 
-    const interval = setInterval(() => {
-      const socket = window.matiksSocket;
-      if (socket) {
-        clearInterval(interval);
+    // Incoming 1-on-1 Call Dialog
+    socket.on('incoming_call', async (data) => {
+      activeTargetSocketId = data.socketId;
+      activeTargetUserId = data.callerId;
 
-        // Incoming 1-on-1 Call Dialog
-        socket.on('incoming_call', async (data) => {
-          activeTargetSocketId = data.socketId;
-          activeTargetUserId = data.callerId;
+      const accept = confirm(`📹 @${data.callerUsername} is video calling you! Accept call?`);
+      if (accept) {
+        injectCallModalHTML();
+        const overlay = document.getElementById('matiks-call-overlay');
+        const title = document.getElementById('call-status-title');
+        if (title) title.textContent = `Call with @${data.callerUsername}`;
+        if (overlay) overlay.style.display = 'block';
 
-          const accept = confirm(`📹 @${data.callerUsername} is video calling you! Accept call?`);
-          if (accept) {
-            injectCallModalHTML();
-            const overlay = document.getElementById('matiks-call-overlay');
-            const title = document.getElementById('call-status-title');
-            if (title) title.textContent = `Call with @${data.callerUsername}`;
-            if (overlay) overlay.style.display = 'block';
+        const stream = await initLocalStream(data.callType === 'video', true);
+        if (!stream) return;
 
-            const stream = await initLocalStream(data.callType === 'video', true);
-            if (!stream) return;
+        const targetKey = data.callerId ? `user_${data.callerId}` : `socket_${data.socketId}`;
+        const pc = createPeerConnection(targetKey, data.socketId, data.callerId);
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
-            const pc = createPeerConnection(data.socketId);
-            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
 
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            socket.emit('answer_call', {
-              targetSocketId: data.socketId,
-              callerId: data.callerId,
-              answer
-            });
-          } else {
-            socket.emit('end_call', { targetSocketId: data.socketId });
-          }
+        socket.emit('answer_call', {
+          targetSocketId: data.socketId,
+          callerId: data.callerId,
+          answer
         });
+      } else {
+        socket.emit('end_call', { targetSocketId: data.socketId, targetUserId: data.callerId });
+      }
+    });
 
-        socket.on('call_accepted', async (data) => {
-          activeTargetSocketId = data.responderSocketId;
-          const title = document.getElementById('call-status-title');
-          if (title) title.textContent = 'Connected ✓';
+    socket.on('call_accepted', async (data) => {
+      activeTargetSocketId = data.responderSocketId;
+      const title = document.getElementById('call-status-title');
+      if (title) title.textContent = 'Connected ✓';
 
-          const pc = peerConnections['direct_peer'];
-          if (pc && data.answer) {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-          }
-        });
+      const targetKey = data.responderUserId ? `user_${data.responderUserId}` : `socket_${data.responderSocketId}`;
+      const pc = peerConnections[targetKey] || peerConnections[`user_${activeTargetUserId}`] || Object.values(peerConnections)[0];
+      if (pc && data.answer) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } catch (e) {
+          console.warn("Set remote description error on call_accepted:", e);
+        }
+      }
+    });
 
-        socket.on('ice_candidate', async (data) => {
-          const pc = peerConnections[data.fromSocketId] || peerConnections['direct_peer'];
-          if (pc && data.candidate) {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-            } catch (e) {
-              console.warn("ICE candidate error:", e);
-            }
-          }
-        });
+    socket.on('call_failed', (data) => {
+      alert(data.message || 'Call failed.');
+      endCall();
+    });
 
-        socket.on('call_ended', () => {
-          alert("Call ended by friend.");
-          endCall();
-        });
+    socket.on('ice_candidate', async (data) => {
+      const targetKey = data.fromUserId ? `user_${data.fromUserId}` : `socket_${data.fromSocketId}`;
+      const pc = peerConnections[targetKey] || peerConnections[`user_${activeTargetUserId}`] || Object.values(peerConnections)[0];
+      if (pc && data.candidate) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (e) {
+          console.warn("ICE candidate error:", e);
+        }
+      }
+    });
 
-        // Group Room WebRTC Signaling
-        socket.on('user_joined_room', async (data) => {
-          const pc = createPeerConnection(data.socketId);
+    socket.on('call_ended', () => {
+      alert("Call ended by friend.");
+      endCall();
+    });
+
+    // Group Room WebRTC Signaling
+    socket.on('room_peers', async (data) => {
+      if (data && data.peers && data.peers.length > 0) {
+        data.peers.forEach(async (peerSocketId) => {
+          const pc = createPeerConnection(`socket_${peerSocketId}`, peerSocketId, null);
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
 
           socket.emit('call_user', {
-            targetSocketId: data.socketId,
+            targetSocketId: peerSocketId,
             offer
           });
         });
-
-        socket.on('user_left_room', (data) => {
-          removeRemoteVideo(data.socketId);
-        });
       }
-    }, 500);
+    });
+
+    socket.on('user_joined_room', async (data) => {
+      const pc = createPeerConnection(`socket_${data.socketId}`, data.socketId, data.userId);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      socket.emit('call_user', {
+        targetSocketId: data.socketId,
+        offer
+      });
+    });
+
+    socket.on('user_left_room', (data) => {
+      removeRemoteVideo(`socket_${data.socketId}`);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    injectCallModalHTML();
+
+    if (typeof window.getMatiksSocket === 'function') {
+      window.getMatiksSocket(setupWebRTCSocketListeners);
+    } else {
+      const interval = setInterval(() => {
+        const socket = window.matiksSocket || (typeof io !== 'undefined' ? io() : null);
+        if (socket) {
+          clearInterval(interval);
+          setupWebRTCSocketListeners(socket);
+        }
+      }, 300);
+    }
   });
 })();

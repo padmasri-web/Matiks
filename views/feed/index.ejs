@@ -29,6 +29,47 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .feed-container-wrapper {
+        padding: 0 12px;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .create-post-card, .post-card, .sidebar-widget-card {
+        padding: 16px;
+        border-radius: 16px;
+      }
+      .create-post-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .post-submit-btn, .schedule-meet-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .post-action-bar {
+        justify-content: space-between;
+        gap: 4px;
+      }
+      .post-action-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .post-image-attachment {
+        max-height: 280px;
+      }
+      .post-textarea {
+        font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+      }
+      .category-pills-row {
+        gap: 6px;
+      }
+      .cat-pill {
+        padding: 5px 12px;
+        font-size: 12px;
+      }
+    }
+
     .feed-left-stream {
       display: flex;
       flex-direction: column;

@@ -73,9 +73,8 @@ io.on('connection', (socket) => {
 
   // WebRTC 1-on-1 & In-Game Calling Signaling Handlers
   socket.on('call_user', (data) => {
-    // data: { targetUserId, callerId, callerName, callerUsername, callType, offer }
-    if (data && data.targetUserId) {
-      const targetSocketId = userSockets.get(data.targetUserId.toString());
+    if (data) {
+      const targetSocketId = data.targetSocketId || (data.targetUserId ? userSockets.get(data.targetUserId.toString()) : null);
       if (targetSocketId) {
         io.to(targetSocketId).emit('incoming_call', {
           callerId: data.callerId || socket.userId,
@@ -85,31 +84,34 @@ io.on('connection', (socket) => {
           offer: data.offer,
           socketId: socket.id
         });
+      } else if (data.callerId) {
+        // Target user is offline
+        socket.emit('call_failed', { message: 'Target user is currently offline or not connected.' });
       }
     }
   });
 
   socket.on('answer_call', (data) => {
-    // data: { targetSocketId, callerId, answer }
-    if (data && data.callerId) {
-      const callerSocketId = userSockets.get(data.callerId.toString()) || data.targetSocketId;
+    if (data) {
+      const callerSocketId = data.targetSocketId || (data.callerId ? userSockets.get(data.callerId.toString()) : null);
       if (callerSocketId) {
         io.to(callerSocketId).emit('call_accepted', {
           answer: data.answer,
-          responderSocketId: socket.id
+          responderSocketId: socket.id,
+          responderUserId: socket.userId
         });
       }
     }
   });
 
   socket.on('ice_candidate', (data) => {
-    // data: { targetUserId, candidate, targetSocketId }
-    if (data) {
+    if (data && data.candidate) {
       const targetSocketId = data.targetSocketId || (data.targetUserId ? userSockets.get(data.targetUserId.toString()) : null);
       if (targetSocketId) {
         io.to(targetSocketId).emit('ice_candidate', {
           candidate: data.candidate,
-          fromSocketId: socket.id
+          fromSocketId: socket.id,
+          fromUserId: socket.userId
         });
       }
     }
