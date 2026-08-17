@@ -182,7 +182,7 @@ io.on('connection', (socket) => {
     if (socket.currentRoom) {
       socket.to(socket.currentRoom).emit('user_left_room', { socketId: socket.id });
       socket.leave(socket.currentRoom);
-      
+
       if (socket.roomId) {
         const roomSockets = Array.from(io.sockets.adapter.rooms.get(socket.currentRoom) || []);
         io.emit('room_participants_updated', {

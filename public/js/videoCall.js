@@ -3,7 +3,15 @@
  * Works globally across all pages & game views!
  */
 (function() {
-  const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  const iceServers = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ]
+  };
   let localStream = null;
   let peerConnections = {}; // targetKey -> RTCPeerConnection
   let activeTargetSocketId = null;
@@ -61,7 +69,7 @@
       <div id="call-modal-header" style="background: #1e293b; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid rgba(255,255,255,0.1); cursor: move; user-select: none;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 16px;">📹</span>
-          <span id="call-status-title" style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 14px; color: #ffffff;">Video Call</span>
+          <span id="call-status-title" style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 14px; color: #ffffff;">Video Meeting</span>
         </div>
         <div style="display: flex; gap: 6px;">
           <button id="call-toggle-min-btn" onclick="toggleCallMinimize()" style="background: transparent; border: none; color: #94a3b8; font-weight: 800; font-size: 14px; cursor: pointer;">↗️</button>
@@ -87,7 +95,7 @@
         <button id="call-video-btn" onclick="toggleCameraVideo()" title="Toggle Camera Video" style="width: 44px; height: 44px; border-radius: 50%; background: #334155; border: 1.5px solid rgba(255,255,255,0.2); color: #ffffff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
           📹
         </button>
-        <button id="call-end-btn" onclick="endCall()" title="End Call" style="width: 50px; height: 50px; border-radius: 50%; background: #ef4444; border: 2px solid #f87171; color: #ffffff; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 14px rgba(239,68,68,0.5); transition: all 0.2s ease;">
+        <button id="call-end-btn" onclick="endCall()" title="Leave Call" style="width: 50px; height: 50px; border-radius: 50%; background: #ef4444; border: 2px solid #f87171; color: #ffffff; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 14px rgba(239,68,68,0.5); transition: all 0.2s ease;">
           🔴
         </button>
       </div>
@@ -108,7 +116,6 @@
       return localStream;
     } catch (err) {
       console.warn("Could not access camera/mic:", err.message);
-      // Fallback: try audio only if video fails
       if (video) {
         try {
           localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
@@ -117,21 +124,32 @@
           console.warn("Audio fallback failed:", audioErr.message);
         }
       }
-      alert("Camera or Microphone access failed. Please check permissions!");
+      alert("Camera or Microphone access failed. Please check browser permissions!");
       return null;
     }
   }
 
+  function attachLocalTracks(pc) {
+    if (!pc || !localStream) return;
+    const existingTracks = pc.getSenders().map(s => s.track).filter(Boolean);
+    localStream.getTracks().forEach(track => {
+      if (!existingTracks.includes(track)) {
+        pc.addTrack(track, localStream);
+      }
+    });
+  }
+
   // Create PeerConnection helper
   function createPeerConnection(targetKey, targetSocketId = null, targetUserId = null) {
-    if (peerConnections[targetKey]) return peerConnections[targetKey];
+    if (peerConnections[targetKey]) {
+      attachLocalTracks(peerConnections[targetKey]);
+      return peerConnections[targetKey];
+    }
 
     const pc = new RTCPeerConnection(iceServers);
     peerConnections[targetKey] = pc;
 
-    if (localStream) {
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    }
+    attachLocalTracks(pc);
 
     pc.onicecandidate = (event) => {
       if (event.candidate && (window.matiksSocket || (typeof io !== 'undefined'))) {
@@ -178,7 +196,10 @@
     }
 
     const videoEl = document.getElementById(`remote-vid-${targetKey}`);
-    if (videoEl) videoEl.srcObject = stream;
+    if (videoEl && stream) {
+      videoEl.srcObject = stream;
+      videoEl.play().catch(e => console.warn("Remote video play error:", e));
+    }
   }
 
   function removeRemoteVideo(targetKey) {
@@ -211,6 +232,8 @@
 
         const targetKey = `user_${targetUserId}`;
         const pc = createPeerConnection(targetKey, null, targetUserId);
+        attachLocalTracks(pc);
+
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
@@ -350,6 +373,8 @@
 
         const targetKey = data.callerId ? `user_${data.callerId}` : `socket_${data.socketId}`;
         const pc = createPeerConnection(targetKey, data.socketId, data.callerId);
+        attachLocalTracks(pc);
+
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
         const answer = await pc.createAnswer();
@@ -387,13 +412,13 @@
     });
 
     socket.on('ice_candidate', async (data) => {
-      const targetKey = data.fromUserId ? `user_${data.fromUserId}` : `socket_${data.fromSocketId}`;
-      const pc = peerConnections[targetKey] || peerConnections[`user_${activeTargetUserId}`] || Object.values(peerConnections)[0];
+      const targetKey = data.fromSocketId ? `socket_${data.fromSocketId}` : (data.fromUserId ? `user_${data.fromUserId}` : null);
+      const pc = (targetKey ? peerConnections[targetKey] : null) || peerConnections[`user_${activeTargetUserId}`] || Object.values(peerConnections)[0];
       if (pc && data.candidate) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (e) {
-          console.warn("ICE candidate error:", e);
+          console.warn("ICE candidate add error:", e);
         }
       }
     });
@@ -407,7 +432,10 @@
     socket.on('room_peers', async (data) => {
       if (data && data.peers && data.peers.length > 0) {
         data.peers.forEach(async (peerSocketId) => {
-          const pc = createPeerConnection(`socket_${peerSocketId}`, peerSocketId, null);
+          const targetKey = `socket_${peerSocketId}`;
+          const pc = createPeerConnection(targetKey, peerSocketId, null);
+          attachLocalTracks(pc);
+
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
 
@@ -421,7 +449,12 @@
 
     socket.on('room_offer', async (data) => {
       if (data && data.callerSocketId && data.offer) {
-        const pc = createPeerConnection(`socket_${data.callerSocketId}`, data.callerSocketId, null);
+        const targetKey = `socket_${data.callerSocketId}`;
+        const pc = createPeerConnection(targetKey, data.callerSocketId, null);
+        
+        await initLocalStream(true, true);
+        attachLocalTracks(pc);
+
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
         const answer = await pc.createAnswer();
@@ -436,7 +469,8 @@
 
     socket.on('room_answer', async (data) => {
       if (data && data.responderSocketId && data.answer) {
-        const pc = peerConnections[`socket_${data.responderSocketId}`];
+        const targetKey = `socket_${data.responderSocketId}`;
+        const pc = peerConnections[targetKey];
         if (pc) {
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));

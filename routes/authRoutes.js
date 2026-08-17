@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
     if (!username || !password || !name) {
       return res.status(400).json({ success: false, message: 'Please fill in all fields' });
     }
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {

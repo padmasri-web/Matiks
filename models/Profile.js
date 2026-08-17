@@ -100,7 +100,7 @@ const UserSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-UserSchema.methods.validPassword = function(password) {
+UserSchema.methods.validPassword = function (password) {
   const crypto = require('crypto');
   const hash = crypto.pbkdf2Sync(password, 'salt', 1000, 64, 'sha512').toString('hex');
   return this.password === hash;
