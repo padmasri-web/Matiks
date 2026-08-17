@@ -213,110 +213,106 @@
   </style>
 </head>
 <body>
-  <!-- Global Dashboard Header Navbar -->
-  <%- include('../dashboard/navbar', { user }) %>
+  <div class="dashboard-container">
+    <!-- Fixed Left Sidebar -->
+    <%- include('../dashboard/leftbar', { activePage: 'group-play' }) %>
 
-  <div class="container-fluid" style="padding-top: 24px;">
-    <div class="row">
-      <!-- Left Navigation Bar Sidebar -->
-      <div class="col-md-2 d-none d-md-block">
-        <%- include('../dashboard/leftbar', { activePage: 'group-play' }) %>
-      </div>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header Navbar -->
+      <%- include('../dashboard/navbar', { user }) %>
 
-      <!-- Main Content Container -->
-      <div class="col-md-10 col-12">
-        <div class="lobby-wrapper">
+      <div class="lobby-wrapper">
 
-          <!-- Lobby Header -->
-          <div class="lobby-header-card">
-            <div class="lobby-title-box">
-              <span class="lobby-game-badge">🎮 <%= group.gameType %></span>
-              <div>
-                <h2 style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 22px; color: #1e293b; margin: 0;">
-                  <%= group.name %>
-                </h2>
-                <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-top: 2px;">
-                  Hosted by @<%= group.host ? group.host.username : 'player' %> • Max 4 Players
-                </div>
+        <!-- Lobby Header -->
+        <div class="lobby-header-card">
+          <div class="lobby-title-box">
+            <span class="lobby-game-badge">🎮 <%= group.gameType %></span>
+            <div>
+              <h2 style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 22px; color: #1e293b; margin: 0;">
+                <%= group.name %>
+              </h2>
+              <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-top: 2px;">
+                Hosted by @<%= group.host ? group.host.username : 'player' %> • Max 4 Players
               </div>
-            </div>
-
-            <!-- Group Code Box -->
-            <div class="lobby-code-box">
-              <div>
-                <div class="lobby-code-label">Group Code</div>
-                <div class="lobby-code-value" id="room-code-text"><%= group.roomCode %></div>
-              </div>
-              <button onclick="copyGroupCode()" style="background: #ffffff; border: 1.5px solid #1e293b; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer;">
-                📋 Copy
-              </button>
             </div>
           </div>
 
-          <!-- 4 Player Slots Grid -->
-          <div class="lobby-players-grid" id="lobby-players-container">
-            <% for (let i = 0; i < 4; i++) { %>
-              <% const member = group.members[i]; %>
-              <% if (member) { %>
-                <div class="player-slot-card occupied" id="player-slot-<%= member.user._id %>">
-                  <div class="slot-avatar" style="<%= member.avatar ? `background-image: url('${member.avatar}')` : '' %>">
-                    <%= !member.avatar ? (member.name ? member.name.charAt(0).toUpperCase() : 'P') : '' %>
-                    <% if (member.isHost) { %>
-                      <div class="host-crown-badge" title="Lobby Host">👑</div>
-                    <% } %>
-                  </div>
-                  <div>
-                    <div class="player-name-text"><%= member.name %></div>
-                    <div class="player-user-text">@<%= member.username %></div>
-                  </div>
-                  <div class="ready-pill <%= member.isReady ? 'ready-true' : 'ready-false' %>" id="ready-badge-<%= member.user._id %>">
-                    <%= member.isReady ? '✅ Ready' : '⏳ Waiting' %>
-                  </div>
+          <!-- Group Code Box -->
+          <div class="lobby-code-box">
+            <div>
+              <div class="lobby-code-label">Group Code</div>
+              <div class="lobby-code-value" id="room-code-text"><%= group.roomCode %></div>
+            </div>
+            <button onclick="copyGroupCode()" style="background: #ffffff; border: 1.5px solid #1e293b; padding: 6px 12px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer;">
+              📋 Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Player Slots Grid -->
+        <div class="lobby-players-grid" id="lobby-players-container">
+          <% for (let i = 0; i < 4; i++) { %>
+            <% const member = group.members[i]; %>
+            <% if (member) { %>
+              <div class="player-slot-card occupied" id="player-slot-<%= member.user._id %>">
+                <div class="slot-avatar" style="<%= member.avatar ? `background-image: url('${member.avatar}')` : '' %>">
+                  <%= !member.avatar ? (member.name ? member.name.charAt(0).toUpperCase() : 'P') : '' %>
+                  <% if (member.isHost) { %>
+                    <div class="host-crown-badge" title="Lobby Host">👑</div>
+                  <% } %>
                 </div>
-              <% } else { %>
-                <div class="player-slot-card empty">
-                  <div style="width: 58px; height: 58px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800;">
-                    +
-                  </div>
-                  <div style="font-weight: 700; font-size: 14px; color: #64748b;">
-                    Open Slot <%= i + 1 %>/4
-                  </div>
-                  <button onclick="copyGroupCode()" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; cursor: pointer;">
-                    Share Code
-                  </button>
+                <div>
+                  <div class="player-name-text"><%= member.name %></div>
+                  <div class="player-user-text">@<%= member.username %></div>
                 </div>
-              <% } %>
+                <div class="ready-pill <%= member.isReady ? 'ready-true' : 'ready-false' %>" id="ready-badge-<%= member.user._id %>">
+                  <%= member.isReady ? '✅ Ready' : '⏳ Waiting' %>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="player-slot-card empty">
+                <div style="width: 58px; height: 58px; border-radius: 50%; background: #e2e8f0; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800;">
+                  +
+                </div>
+                <div style="font-weight: 700; font-size: 14px; color: #64748b;">
+                  Open Slot <%= i + 1 %>/4
+                </div>
+                <button onclick="copyGroupCode()" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #475569; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; cursor: pointer;">
+                  Share Code
+                </button>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+
+        <!-- Lobby Footer Toolbar Controls -->
+        <div class="lobby-toolbar-card">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button onclick="copyGroupCode()" class="lobby-action-btn btn-share-feed">
+              📋 Copy Group Code (<%= group.roomCode %>)
+            </button>
+            <button onclick="launchLobbyVideoCall()" class="lobby-action-btn btn-video-call">
+              📹 Launch Lobby Video Grid
+            </button>
+          </div>
+
+          <div>
+            <% const isHost = group.host._id.toString() === user._id.toString(); %>
+            <% if (isHost) { %>
+              <button onclick="startGroupGame()" class="lobby-action-btn btn-start-game" id="btn-start-game">
+                Start Game 🚀
+              </button>
+            <% } else { %>
+              <button onclick="toggleMyReadyStatus()" class="lobby-action-btn" style="background: #fbbf24; color: #1e293b;" id="btn-ready-toggle">
+                Toggle Ready Status ⚡
+              </button>
             <% } %>
           </div>
-
-          <!-- Lobby Footer Toolbar Controls -->
-          <div class="lobby-toolbar-card">
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <button onclick="copyGroupCode()" class="lobby-action-btn btn-share-feed">
-                📋 Copy Group Code (<%= group.roomCode %>)
-              </button>
-              <button onclick="launchLobbyVideoCall()" class="lobby-action-btn btn-video-call">
-                📹 Launch Lobby Video Grid
-              </button>
-            </div>
-
-            <div>
-              <% const isHost = group.host._id.toString() === user._id.toString(); %>
-              <% if (isHost) { %>
-                <button onclick="startGroupGame()" class="lobby-action-btn btn-start-game" id="btn-start-game">
-                  Start Game 🚀
-                </button>
-              <% } else { %>
-                <button onclick="toggleMyReadyStatus()" class="lobby-action-btn" style="background: #fbbf24; color: #1e293b;" id="btn-ready-toggle">
-                  Toggle Ready Status ⚡
-                </button>
-              <% } %>
-            </div>
-          </div>
-
         </div>
+
       </div>
-    </div>
+    </main>
   </div>
 
   <script>

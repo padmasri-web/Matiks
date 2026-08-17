@@ -269,131 +269,127 @@
   </style>
 </head>
 <body>
-  <!-- Global Dashboard Header Navbar -->
-  <%- include('../dashboard/navbar', { user }) %>
+  <div class="dashboard-container">
+    <!-- Fixed Left Sidebar -->
+    <%- include('../dashboard/leftbar', { activePage: 'group-play' }) %>
 
-  <div class="container-fluid" style="padding-top: 24px;">
-    <div class="row">
-      <!-- Left Navigation Bar Sidebar -->
-      <div class="col-md-2 d-none d-md-block">
-        <%- include('../dashboard/leftbar', { activePage: 'group-play' }) %>
-      </div>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header Navbar -->
+      <%- include('../dashboard/navbar', { user }) %>
 
-      <!-- Main Content Container -->
-      <div class="col-md-10 col-12">
-        <div class="gp-wrapper">
+      <div class="gp-wrapper">
 
-          <!-- Top Section: Series of In-Session Games in Play -->
-          <div class="gp-sessions-section">
-            <div class="gp-sessions-header">
-              <div class="gp-sessions-title">
-                <span>🎮 In-Session Games in Play</span>
-                <span class="gp-live-pill">• Live Lobbies</span>
-              </div>
-              <span style="font-size: 13px; color: #64748b; font-weight: 600;">Real-time Active Battles</span>
+        <!-- Top Section: Series of In-Session Games in Play -->
+        <div class="gp-sessions-section">
+          <div class="gp-sessions-header">
+            <div class="gp-sessions-title">
+              <span>🎮 In-Session Games in Play</span>
+              <span class="gp-live-pill">• Live Lobbies</span>
             </div>
-
-            <div class="gp-sessions-carousel" id="active-sessions-carousel">
-              <% if (activeSessions && activeSessions.length > 0) { %>
-                <% activeSessions.forEach(session => { %>
-                  <div class="gp-session-card">
-                    <div class="gp-session-game">
-                      <span><%= session.gameType %></span>
-                      <span class="gp-member-count-badge">👥 <%= session.members ? session.members.length : 1 %>/4</span>
-                    </div>
-                    <div style="font-size: 13px; font-weight: 700; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                      <%= session.name %>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-                      <span style="font-size: 12px; color: #64748b; font-weight: 600;">Host: @<%= session.host ? session.host.username : 'player' %></span>
-                      <a href="/group-play/lobby/<%= session.roomCode %>" style="background: #85ef47; border: 1.5px solid #1e293b; color: #1e293b; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 0 #1e293b;">Join</a>
-                    </div>
-                  </div>
-                <% }); %>
-              <% } else { %>
-                <div style="padding: 16px; color: #64748b; font-size: 14px; font-weight: 600;">
-                  No active group play lobbies right now. Be the first to create one below! 🚀
-                </div>
-              <% } %>
-            </div>
+            <span style="font-size: 13px; color: #64748b; font-weight: 600;">Real-time Active Battles</span>
           </div>
 
-          <!-- Main 2-Column Action Cards: Create Group & Join Group -->
-          <div class="gp-actions-grid">
-            
-            <!-- Card 1: Create a Group -->
-            <div class="gp-action-card create-card">
-              <div>
-                <div class="gp-card-header">
-                  <div class="gp-card-icon create-icon">👑</div>
-                  <div>
-                    <h2 class="gp-card-title">Create a Group</h2>
-                    <div class="gp-card-subtitle">Host a custom multiplayer battle for up to 4 players</div>
+          <div class="gp-sessions-carousel" id="active-sessions-carousel">
+            <% if (activeSessions && activeSessions.length > 0) { %>
+              <% activeSessions.forEach(session => { %>
+                <div class="gp-session-card">
+                  <div class="gp-session-game">
+                    <span><%= session.gameType %></span>
+                    <span class="gp-member-count-badge">👥 <%= session.members ? session.members.length : 1 %>/4</span>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 700; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <%= session.name %>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                    <span style="font-size: 12px; color: #64748b; font-weight: 600;">Host: @<%= session.host ? session.host.username : 'player' %></span>
+                    <a href="/group-play/lobby/<%= session.roomCode %>" style="background: #85ef47; border: 1.5px solid #1e293b; color: #1e293b; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 0 #1e293b;">Join</a>
                   </div>
                 </div>
+              <% }); %>
+            <% } else { %>
+              <div style="padding: 16px; color: #64748b; font-size: 14px; font-weight: 600;">
+                No active group play lobbies right now. Be the first to create one below! 🚀
+              </div>
+            <% } %>
+          </div>
+        </div>
 
-                <div class="gp-form-group">
-                  <label class="gp-form-label">Lobby Topic / Name</label>
-                  <input type="text" id="create-lobby-name" class="gp-input" placeholder="e.g. Speed Sudoku Championship 🏆" value="Friday Math Duels">
-                </div>
-
-                <div class="gp-form-group">
-                  <label class="gp-form-label">Select Game Mode</label>
-                  <select id="create-game-type" class="gp-select">
-                    <option value="Sudoku">🧩 Sudoku Speedrun</option>
-                    <option value="2048">🔢 2048 Tile Sprint</option>
-                    <option value="Memory Math">🧠 Memory Math Matrix</option>
-                    <option value="Snake">🐍 Snake Apple Race</option>
-                    <option value="Tic-Tac-Toe">❌ Tic-Tac-Toe Tournament</option>
-                  </select>
-                </div>
-
-                <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                  <span>ℹ️</span>
-                  <span>Generates a <b>unique 6-character Group Code</b> to share with friends. (Max 4 Members)</span>
+        <!-- Main 2-Column Action Cards: Create Group & Join Group -->
+        <div class="gp-actions-grid">
+          
+          <!-- Card 1: Create a Group -->
+          <div class="gp-action-card create-card">
+            <div>
+              <div class="gp-card-header">
+                <div class="gp-card-icon create-icon">👑</div>
+                <div>
+                  <h2 class="gp-card-title">Create a Group</h2>
+                  <div class="gp-card-subtitle">Host a custom multiplayer battle for up to 4 players</div>
                 </div>
               </div>
 
-              <button onclick="submitCreateGroup()" class="gp-btn-create" id="btn-create-submit">
-                Create Group Lobby 🚀
-              </button>
+              <div class="gp-form-group">
+                <label class="gp-form-label">Lobby Topic / Name</label>
+                <input type="text" id="create-lobby-name" class="gp-input" placeholder="e.g. Speed Sudoku Championship 🏆" value="Friday Math Duels">
+              </div>
+
+              <div class="gp-form-group">
+                <label class="gp-form-label">Select Game Mode</label>
+                <select id="create-game-type" class="gp-select">
+                  <option value="Sudoku">🧩 Sudoku Speedrun</option>
+                  <option value="2048">🔢 2048 Tile Sprint</option>
+                  <option value="Memory Math">🧠 Memory Math Matrix</option>
+                  <option value="Snake">🐍 Snake Apple Race</option>
+                  <option value="Tic-Tac-Toe">❌ Tic-Tac-Toe Tournament</option>
+                </select>
+              </div>
+
+              <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>ℹ️</span>
+                <span>Generates a <b>unique 6-character Group Code</b> to share with friends. (Max 4 Members)</span>
+              </div>
             </div>
 
-            <!-- Card 2: Join a Group -->
-            <div class="gp-action-card join-card">
-              <div>
-                <div class="gp-card-header">
-                  <div class="gp-card-icon join-icon">🔑</div>
-                  <div>
-                    <h2 class="gp-card-title">Join a Group</h2>
-                    <div class="gp-card-subtitle">Enter host's 6-character code to enter lobby</div>
-                  </div>
-                </div>
+            <button onclick="submitCreateGroup()" class="gp-btn-create" id="btn-create-submit">
+              Create Group Lobby 🚀
+            </button>
+          </div>
 
-                <div class="gp-form-group" style="margin-top: 10px;">
-                  <label class="gp-form-label">Enter 6-Character Group Code</label>
-                  <input type="text" id="join-room-code" class="gp-input gp-code-input" placeholder="e.g. 7X9K2L" maxlength="6">
-                </div>
-
-                <div id="join-error-alert" style="display: none; background: #fef2f2; border: 2px solid #ef4444; color: #b91c1c; border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px;">
-                </div>
-
-                <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                  <span>🔒</span>
-                  <span>Strict limit of <b>4 members max</b> per group. Codes are case-insensitive.</span>
+          <!-- Card 2: Join a Group -->
+          <div class="gp-action-card join-card">
+            <div>
+              <div class="gp-card-header">
+                <div class="gp-card-icon join-icon">🔑</div>
+                <div>
+                  <h2 class="gp-card-title">Join a Group</h2>
+                  <div class="gp-card-subtitle">Enter host's 6-character code to enter lobby</div>
                 </div>
               </div>
 
-              <button onclick="submitJoinGroup()" class="gp-btn-join" id="btn-join-submit">
-                Join Group Lobby ➔
-              </button>
+              <div class="gp-form-group" style="margin-top: 10px;">
+                <label class="gp-form-label">Enter 6-Character Group Code</label>
+                <input type="text" id="join-room-code" class="gp-input gp-code-input" placeholder="e.g. 7X9K2L" maxlength="6">
+              </div>
+
+              <div id="join-error-alert" style="display: none; background: #fef2f2; border: 2px solid #ef4444; color: #b91c1c; border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px;">
+              </div>
+
+              <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>🔒</span>
+                <span>Strict limit of <b>4 members max</b> per group. Codes are case-insensitive.</span>
+              </div>
             </div>
 
+            <button onclick="submitJoinGroup()" class="gp-btn-join" id="btn-join-submit">
+              Join Group Lobby ➔
+            </button>
           </div>
 
         </div>
+
       </div>
-    </div>
+    </main>
   </div>
 
   <script>
