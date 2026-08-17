@@ -22,6 +22,7 @@ const friendRoutes = require('./routes/friendRoutes');
 const ticTacToeRoutes = require('./routes/tic-tac-toe_Routes');
 const postRoutes = require('./routes/postRoutes');
 const meetingRoutes = require('./routes/meetingRoutes');
+const groupPlayRoutes = require('./routes/groupPlayRoutes');
 
 // Import models for seeding
 const User = require('./models/Profile');
@@ -193,6 +194,53 @@ io.on('connection', (socket) => {
 
       socket.currentRoom = null;
       socket.roomId = null;
+    }
+  });
+
+  // Group Play Real-Time Socket.IO Lobby Synchronization Handlers
+  socket.on('join_group_lobby', (data) => {
+    if (data && data.roomCode) {
+      const roomName = `group_lobby_${data.roomCode.toUpperCase()}`;
+      socket.join(roomName);
+      socket.groupRoomCode = data.roomCode.toUpperCase();
+    }
+  });
+
+  socket.on('toggle_member_ready', async (data) => {
+    if (data && data.roomCode && data.userId) {
+      try {
+        const GroupRoom = require('./models/GroupRoom');
+        const group = await GroupRoom.findOne({ roomCode: data.roomCode.toUpperCase() });
+        if (group) {
+          const member = group.members.find(m => m.user.toString() === data.userId.toString());
+          if (member) {
+            member.isReady = !member.isReady;
+            await group.save();
+            const roomName = `group_lobby_${data.roomCode.toUpperCase()}`;
+            io.to(roomName).emit('group_lobby_updated', { roomCode: data.roomCode, members: group.members });
+          }
+        }
+      } catch (err) {
+        console.error("toggle_member_ready error:", err);
+      }
+    }
+  });
+
+  socket.on('start_group_game', async (data) => {
+    if (data && data.roomCode) {
+      try {
+        const GroupRoom = require('./models/GroupRoom');
+        const group = await GroupRoom.findOne({ roomCode: data.roomCode.toUpperCase() });
+        if (group) {
+          group.status = 'in-session';
+          group.startTime = new Date();
+          await group.save();
+          const roomName = `group_lobby_${data.roomCode.toUpperCase()}`;
+          io.to(roomName).emit('group_game_started', { roomCode: data.roomCode, gameType: group.gameType });
+        }
+      } catch (err) {
+        console.error("start_group_game error:", err);
+      }
     }
   });
 
@@ -409,6 +457,7 @@ app.use('/', ensureAuthenticated, gameRoutes);
 app.use('/', ensureAuthenticated, friendRoutes);
 app.use('/', ensureAuthenticated, postRoutes);
 app.use('/', ensureAuthenticated, meetingRoutes);
+app.use('/group-play', ensureAuthenticated, groupPlayRoutes);
 
 // Protected Dashboard Arena Page Route
 app.get('/', ensureAuthenticated, (req, res) => {

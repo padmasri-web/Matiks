@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matiks - Group Play Lobbies & Multiplayer Battles</title>
+  <meta name="description" content="Create custom 4-player multiplayer lobbies, join group games via 6-character room codes, and battle friends in real time on Matiks.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/profile.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    .gp-wrapper {
+      width: 100%;
+      max-width: 1140px;
+      margin: 0 auto 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Top Active Sessions Stream Header */
+    .gp-sessions-section {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 22px 24px;
+      box-shadow: 0 8px 30px rgba(31, 38, 135, 0.05);
+    }
+    .gp-sessions-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .gp-sessions-title {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 18px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .gp-live-pill {
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 0.8; }
+    }
+
+    .gp-sessions-carousel {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+    .gp-session-card {
+      min-width: 240px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    .gp-session-card:hover {
+      transform: translateY(-2px);
+      border-color: #85ef47;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+    .gp-session-game {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 15px;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .gp-member-count-badge {
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Main Action Cards (2 Columns) */
+    .gp-actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 868px) {
+      .gp-actions-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .gp-action-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 10px 32px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .gp-action-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+    }
+    .create-card::before {
+      background: linear-gradient(90deg, #85ef47, #38bdf8);
+    }
+    .join-card::before {
+      background: linear-gradient(90deg, #f42f76, #a855f7);
+    }
+
+    .gp-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .gp-card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border: 2px solid #1e293b;
+      box-shadow: 0 4px 0 #1e293b;
+      flex-shrink: 0;
+    }
+    .create-icon { background: #85ef47; color: #1e293b; }
+    .join-icon { background: #f42f76; color: #ffffff; }
+
+    .gp-card-title {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 22px;
+      color: #1e293b;
+      margin: 0;
+    }
+    .gp-card-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .gp-form-group {
+      margin-bottom: 18px;
+    }
+    .gp-form-label {
+      font-weight: 700;
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .gp-input, .gp-select {
+      width: 100%;
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: #1e293b;
+      font-family: var(--font-main, 'Inter', sans-serif);
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .gp-input:focus, .gp-select:focus {
+      border-color: #85ef47;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(133, 239, 71, 0.25);
+    }
+
+    .gp-code-input {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-align: center;
+      background: #ffffff;
+      border: 2.5px solid #1e293b;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .gp-code-input::placeholder {
+      letter-spacing: 2px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .gp-btn-create {
+      background: #85ef47;
+      border: 2.5px solid #1e293b;
+      color: #1e293b;
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 900;
+      font-size: 16px;
+      padding: 14px 24px;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #1e293b;
+      transition: all 0.15s ease;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .gp-btn-create:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #1e293b;
+    }
+
+    .gp-btn-join {
+      background: #38bdf8;
+      border: 2.5px solid #1e293b;
+      color: #1e293b;
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 900;
+      font-size: 16px;
+      padding: 14px 24px;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #1e293b;
+      transition: all 0.15s ease;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .gp-btn-join:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <!-- Global Dashboard Header Navbar -->
+  <%- include('../dashboard/navbar', { user }) %>
+
+  <div class="container-fluid" style="padding-top: 24px;">
+    <div class="row">
+      <!-- Left Navigation Bar Sidebar -->
+      <div class="col-md-2 d-none d-md-block">
+        <%- include('../dashboard/leftbar', { activePage: 'group-play' }) %>
+      </div>
+
+      <!-- Main Content Container -->
+      <div class="col-md-10 col-12">
+        <div class="gp-wrapper">
+
+          <!-- Top Section: Series of In-Session Games in Play -->
+          <div class="gp-sessions-section">
+            <div class="gp-sessions-header">
+              <div class="gp-sessions-title">
+                <span>🎮 In-Session Games in Play</span>
+                <span class="gp-live-pill">• Live Lobbies</span>
+              </div>
+              <span style="font-size: 13px; color: #64748b; font-weight: 600;">Real-time Active Battles</span>
+            </div>
+
+            <div class="gp-sessions-carousel" id="active-sessions-carousel">
+              <% if (activeSessions && activeSessions.length > 0) { %>
+                <% activeSessions.forEach(session => { %>
+                  <div class="gp-session-card">
+                    <div class="gp-session-game">
+                      <span><%= session.gameType %></span>
+                      <span class="gp-member-count-badge">👥 <%= session.members ? session.members.length : 1 %>/4</span>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 700; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <%= session.name %>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                      <span style="font-size: 12px; color: #64748b; font-weight: 600;">Host: @<%= session.host ? session.host.username : 'player' %></span>
+                      <a href="/group-play/lobby/<%= session.roomCode %>" style="background: #85ef47; border: 1.5px solid #1e293b; color: #1e293b; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 0 #1e293b;">Join</a>
+                    </div>
+                  </div>
+                <% }); %>
+              <% } else { %>
+                <div style="padding: 16px; color: #64748b; font-size: 14px; font-weight: 600;">
+                  No active group play lobbies right now. Be the first to create one below! 🚀
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Main 2-Column Action Cards: Create Group & Join Group -->
+          <div class="gp-actions-grid">
+            
+            <!-- Card 1: Create a Group -->
+            <div class="gp-action-card create-card">
+              <div>
+                <div class="gp-card-header">
+                  <div class="gp-card-icon create-icon">👑</div>
+                  <div>
+                    <h2 class="gp-card-title">Create a Group</h2>
+                    <div class="gp-card-subtitle">Host a custom multiplayer battle for up to 4 players</div>
+                  </div>
+                </div>
+
+                <div class="gp-form-group">
+                  <label class="gp-form-label">Lobby Topic / Name</label>
+                  <input type="text" id="create-lobby-name" class="gp-input" placeholder="e.g. Speed Sudoku Championship 🏆" value="Friday Math Duels">
+                </div>
+
+                <div class="gp-form-group">
+                  <label class="gp-form-label">Select Game Mode</label>
+                  <select id="create-game-type" class="gp-select">
+                    <option value="Sudoku">🧩 Sudoku Speedrun</option>
+                    <option value="2048">🔢 2048 Tile Sprint</option>
+                    <option value="Memory Math">🧠 Memory Math Matrix</option>
+                    <option value="Snake">🐍 Snake Apple Race</option>
+                    <option value="Tic-Tac-Toe">❌ Tic-Tac-Toe Tournament</option>
+                  </select>
+                </div>
+
+                <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                  <span>ℹ️</span>
+                  <span>Generates a <b>unique 6-character Group Code</b> to share with friends. (Max 4 Members)</span>
+                </div>
+              </div>
+
+              <button onclick="submitCreateGroup()" class="gp-btn-create" id="btn-create-submit">
+                Create Group Lobby 🚀
+              </button>
+            </div>
+
+            <!-- Card 2: Join a Group -->
+            <div class="gp-action-card join-card">
+              <div>
+                <div class="gp-card-header">
+                  <div class="gp-card-icon join-icon">🔑</div>
+                  <div>
+                    <h2 class="gp-card-title">Join a Group</h2>
+                    <div class="gp-card-subtitle">Enter host's 6-character code to enter lobby</div>
+                  </div>
+                </div>
+
+                <div class="gp-form-group" style="margin-top: 10px;">
+                  <label class="gp-form-label">Enter 6-Character Group Code</label>
+                  <input type="text" id="join-room-code" class="gp-input gp-code-input" placeholder="e.g. 7X9K2L" maxlength="6">
+                </div>
+
+                <div id="join-error-alert" style="display: none; background: #fef2f2; border: 2px solid #ef4444; color: #b91c1c; border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px;">
+                </div>
+
+                <div style="background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                  <span>🔒</span>
+                  <span>Strict limit of <b>4 members max</b> per group. Codes are case-insensitive.</span>
+                </div>
+              </div>
+
+              <button onclick="submitJoinGroup()" class="gp-btn-join" id="btn-join-submit">
+                Join Group Lobby ➔
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function submitCreateGroup() {
+      const nameInput = document.getElementById('create-lobby-name');
+      const gameTypeSelect = document.getElementById('create-game-type');
+      const btn = document.getElementById('btn-create-submit');
+
+      const name = nameInput.value.trim();
+      const gameType = gameTypeSelect.value;
+
+      if (!name) {
+        alert("Please enter a name for your group lobby!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating Lobby...';
+
+      try {
+        const res = await fetch('/group-play/api/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, gameType })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = `/group-play/lobby/${data.roomCode}`;
+        } else {
+          alert(data.message || 'Failed to create group lobby.');
+          btn.disabled = false;
+          btn.textContent = 'Create Group Lobby 🚀';
+        }
+      } catch (err) {
+        console.error("Create group error:", err);
+        alert("Network error. Please try again.");
+        btn.disabled = false;
+        btn.textContent = 'Create Group Lobby 🚀';
+      }
+    }
+
+    async function submitJoinGroup() {
+      const codeInput = document.getElementById('join-room-code');
+      const errorAlert = document.getElementById('join-error-alert');
+      const btn = document.getElementById('btn-join-submit');
+
+      const roomCode = codeInput.value.trim();
+      errorAlert.style.display = 'none';
+
+      if (!roomCode || roomCode.length < 4) {
+        errorAlert.textContent = "Please enter a valid 6-character Group Code!";
+        errorAlert.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+
+      try {
+        const res = await fetch('/group-play/api/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomCode })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = `/group-play/lobby/${data.roomCode}`;
+        } else {
+          errorAlert.textContent = data.message || 'Failed to join group lobby.';
+          errorAlert.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Join Group Lobby ➔';
+        }
+      } catch (err) {
+        console.error("Join group error:", err);
+        errorAlert.textContent = "Network error occurred. Please try again.";
+        errorAlert.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Join Group Lobby ➔';
+      }
+    }
+  </script>
+</body>
+</html>
