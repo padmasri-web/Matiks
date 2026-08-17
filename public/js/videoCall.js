@@ -411,7 +411,7 @@
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
 
-          socket.emit('call_user', {
+          socket.emit('room_offer', {
             targetSocketId: peerSocketId,
             offer
           });
@@ -419,15 +419,36 @@
       }
     });
 
-    socket.on('user_joined_room', async (data) => {
-      const pc = createPeerConnection(`socket_${data.socketId}`, data.socketId, data.userId);
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+    socket.on('room_offer', async (data) => {
+      if (data && data.callerSocketId && data.offer) {
+        const pc = createPeerConnection(`socket_${data.callerSocketId}`, data.callerSocketId, null);
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
 
-      socket.emit('call_user', {
-        targetSocketId: data.socketId,
-        offer
-      });
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        socket.emit('room_answer', {
+          targetSocketId: data.callerSocketId,
+          answer
+        });
+      }
+    });
+
+    socket.on('room_answer', async (data) => {
+      if (data && data.responderSocketId && data.answer) {
+        const pc = peerConnections[`socket_${data.responderSocketId}`];
+        if (pc) {
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+          } catch (e) {
+            console.warn("Set remote description error on room_answer:", e);
+          }
+        }
+      }
+    });
+
+    socket.on('user_joined_room', (data) => {
+      console.log(`📹 User joined video room: ${data.userName || data.userUsername}`);
     });
 
     socket.on('user_left_room', (data) => {

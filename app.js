@@ -139,10 +139,10 @@ io.on('connection', (socket) => {
       const roomSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []);
       const otherSockets = roomSockets.filter(id => id !== socket.id);
 
-      // Notify caller of existing room peers
+      // Send existing peers ONLY to the newly joined peer
       socket.emit('room_peers', { peers: otherSockets });
 
-      // Broadcast to existing room peers that a new user joined
+      // Notify existing room peers of the new participant
       socket.to(roomName).emit('user_joined_room', {
         socketId: socket.id,
         userId: data.userId,
@@ -150,10 +150,30 @@ io.on('connection', (socket) => {
         userUsername: data.userUsername
       });
 
-      // Broadcast room participant count update to all users
+      // Broadcast room participant count update globally
       io.emit('room_participants_updated', {
         roomId: data.roomId,
         count: roomSockets.length
+      });
+    }
+  });
+
+  socket.on('room_offer', (data) => {
+    // data: { targetSocketId, offer }
+    if (data && data.targetSocketId) {
+      io.to(data.targetSocketId).emit('room_offer', {
+        callerSocketId: socket.id,
+        offer: data.offer
+      });
+    }
+  });
+
+  socket.on('room_answer', (data) => {
+    // data: { targetSocketId, answer }
+    if (data && data.targetSocketId) {
+      io.to(data.targetSocketId).emit('room_answer', {
+        responderSocketId: socket.id,
+        answer: data.answer
       });
     }
   });
