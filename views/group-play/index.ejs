@@ -280,6 +280,13 @@
 
       <div class="gp-wrapper">
 
+        <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+          <div style="background: #fef2f2; border: 2px solid #ef4444; color: #b91c1c; border-radius: 16px; padding: 14px 20px; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);">
+            <span>⚠️ <%= errorMessage %></span>
+            <button onclick="this.parentElement.remove()" style="background: transparent; border: none; font-size: 18px; color: #b91c1c; cursor: pointer; font-weight: 900;">✕</button>
+          </div>
+        <% } %>
+
         <!-- Top Section: Series of In-Session Games in Play -->
         <div class="gp-sessions-section">
           <div class="gp-sessions-header">

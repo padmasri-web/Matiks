@@ -429,6 +429,9 @@ const ensureAuthenticated = (req, res, next) => {
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
+  if (req.originalUrl && req.originalUrl !== '/auth' && !req.originalUrl.startsWith('/api/')) {
+    req.session.returnTo = req.originalUrl;
+  }
   res.redirect('/auth');
 };
 

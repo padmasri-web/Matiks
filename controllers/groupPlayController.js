@@ -15,16 +15,23 @@ function generateRoomCode() {
 // Render main Group Play hub dashboard page
 exports.renderGroupPlayDashboard = async (req, res) => {
   try {
-    const user = req.user || await User.findOne();
+    const user = req.user;
+    if (!user) {
+      return res.redirect('/auth');
+    }
+
     const activeSessions = await GroupRoom.find({ status: { $in: ['waiting', 'in-session'] } })
       .populate('host', 'name username avatar')
       .populate('members.user', 'name username avatar')
       .sort({ createdAt: -1 })
       .limit(10);
 
+    const errorMessage = req.query.error === 'full' ? 'That Group Lobby is already full (Max 4 Members).' : null;
+
     res.render('group-play/index', {
       user,
       activeSessions,
+      errorMessage,
       activePage: 'group-play'
     });
   } catch (err) {
@@ -36,7 +43,11 @@ exports.renderGroupPlayDashboard = async (req, res) => {
 // Create a new Group Lobby (Generates 6-character room code)
 exports.createGroup = async (req, res) => {
   try {
-    const user = req.user || await User.findOne();
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Authentication required. Please log in." });
+    }
+
     const { name, gameType } = req.body;
 
     if (!name || !name.trim()) {
@@ -95,7 +106,11 @@ exports.createGroup = async (req, res) => {
 // Join an existing Group Lobby using 6-character Code
 exports.joinGroup = async (req, res) => {
   try {
-    const user = req.user || await User.findOne();
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Authentication required. Please log in." });
+    }
+
     const { roomCode } = req.body;
 
     if (!roomCode || !roomCode.trim()) {
@@ -133,6 +148,12 @@ exports.joinGroup = async (req, res) => {
         isReady: false
       });
       await group.save();
+
+      // Emit real-time update to existing room sockets
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`group_lobby_${cleanCode}`).emit('group_lobby_updated', { roomCode: cleanCode, members: group.members });
+      }
     }
 
     return res.json({ success: true, roomCode: group.roomCode });
@@ -142,18 +163,53 @@ exports.joinGroup = async (req, res) => {
   }
 };
 
-// Render specific Group Play live lobby room view
+// Render specific Group Play live lobby room view (With Direct URL Auto-Join Logic)
 exports.renderLobby = async (req, res) => {
   try {
-    const user = req.user || await User.findOne();
-    const { roomCode } = req.params;
+    const user = req.user;
+    if (!user) {
+      return res.redirect('/auth');
+    }
 
-    const group = await GroupRoom.findOne({ roomCode: roomCode.toUpperCase() })
+    const { roomCode } = req.params;
+    const cleanCode = roomCode.toUpperCase();
+
+    let group = await GroupRoom.findOne({ roomCode: cleanCode })
       .populate('host', 'name username avatar')
       .populate('members.user', 'name username avatar');
 
     if (!group) {
       return res.redirect('/group-play');
+    }
+
+    // DIRECT URL JOINING & CAPACITY CHECK
+    const isAlreadyMember = group.members.some(m => m.user._id.toString() === user._id.toString());
+
+    if (!isAlreadyMember) {
+      if (group.members.length >= 4) {
+        return res.redirect('/group-play?error=full');
+      }
+
+      // Auto-join logged-in user navigating directly via URL
+      group.members.push({
+        user: user._id,
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar || '',
+        isHost: false,
+        isReady: false
+      });
+      await group.save();
+
+      // Refresh populated document
+      group = await GroupRoom.findOne({ roomCode: cleanCode })
+        .populate('host', 'name username avatar')
+        .populate('members.user', 'name username avatar');
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(`group_lobby_${cleanCode}`).emit('group_lobby_updated', { roomCode: cleanCode, members: group.members });
+      }
     }
 
     res.render('group-play/lobby', {

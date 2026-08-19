@@ -25,7 +25,12 @@ router.post('/login', (req, res, next) => {
       if (err) {
         return res.status(500).json({ success: false, message: 'Login execution failed' });
       }
-      return res.json({ success: true, user });
+      const redirectUrl = req.session.returnTo || '/';
+      delete req.session.returnTo;
+      req.session.save((saveErr) => {
+        if (saveErr) console.warn("Session save error on login:", saveErr);
+        return res.json({ success: true, user, redirectUrl });
+      });
     });
   })(req, res, next);
 });
@@ -76,7 +81,12 @@ router.post('/register', async (req, res) => {
       if (err) {
         return res.status(500).json({ success: false, message: 'Registration login failed' });
       }
-      return res.json({ success: true, user: newUser });
+      const redirectUrl = req.session.returnTo || '/';
+      delete req.session.returnTo;
+      req.session.save((saveErr) => {
+        if (saveErr) console.warn("Session save error on register:", saveErr);
+        return res.json({ success: true, user: newUser, redirectUrl });
+      });
     });
   } catch (error) {
     console.error("Registration error:", error);
