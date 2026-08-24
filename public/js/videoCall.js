@@ -40,13 +40,39 @@
       z-index: 999999;
       overflow: hidden;
       font-family: var(--font-main, 'Inter', sans-serif);
-      transition: all 0.3s ease;
+      transition: width 0.25s ease, opacity 0.25s ease;
+      touch-action: none;
     `;
 
     overlay.innerHTML = `
       <style>
+        #matiks-call-overlay.is-dragging {
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.5) !important;
+          opacity: 0.96;
+          user-select: none;
+        }
+        #call-modal-header {
+          cursor: grab;
+          user-select: none;
+          touch-action: none;
+        }
+        #call-modal-header:active {
+          cursor: grabbing;
+        }
+        .drag-indicator-grip {
+          opacity: 0.65;
+          font-size: 14px;
+          cursor: grab;
+          line-height: 1;
+          letter-spacing: -1px;
+          user-select: none;
+        }
+        #call-modal-header:hover .drag-indicator-grip {
+          opacity: 1;
+          color: #38bdf8;
+        }
         @media (max-width: 600px) {
-          #matiks-call-overlay {
+          #matiks-call-overlay:not([data-dragged="true"]) {
             bottom: 12px !important;
             right: 12px !important;
             left: 12px !important;
@@ -65,14 +91,15 @@
           }
         }
       </style>
-      <!-- Call Header -->
-      <div id="call-modal-header" style="background: #1e293b; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid rgba(255,255,255,0.1); cursor: move; user-select: none;">
-        <div style="display: flex; align-items: center; gap: 8px;">
+      <!-- Call Header (Draggable Handle) -->
+      <div id="call-modal-header" title="Click and drag to reposition video box" style="background: #1e293b; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; align-items: center; gap: 8px; pointer-events: none;">
+          <span class="drag-indicator-grip">⠿</span>
           <span style="font-size: 16px;">📹</span>
           <span id="call-status-title" style="font-family: var(--font-heading, 'Outfit', sans-serif); font-weight: 800; font-size: 14px; color: #ffffff;">Video Meeting</span>
         </div>
-        <div style="display: flex; gap: 6px;">
-          <button id="call-toggle-min-btn" onclick="toggleCallMinimize()" style="background: transparent; border: none; color: #94a3b8; font-weight: 800; font-size: 14px; cursor: pointer;">↗️</button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="call-toggle-min-btn" onclick="toggleCallMinimize()" title="Minimize / Restore" style="background: transparent; border: none; color: #94a3b8; font-weight: 800; font-size: 14px; cursor: pointer; padding: 2px 4px;">↗️</button>
         </div>
       </div>
 
@@ -102,6 +129,115 @@
     `;
 
     document.body.appendChild(overlay);
+    setupDraggableOverlay(overlay, document.getElementById('call-modal-header'));
+  }
+
+  // Draggable logic for video overlay modal
+  function setupDraggableOverlay(overlay, handle) {
+    if (!overlay || !handle) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
+
+    function onPointerDown(e) {
+      // Ignore clicks on control buttons or input elements inside header
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) {
+        return;
+      }
+
+      isDragging = true;
+      overlay.setAttribute('data-dragged', 'true');
+      overlay.classList.add('is-dragging');
+
+      const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+      const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+
+      startX = clientX;
+      startY = clientY;
+
+      const rect = overlay.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+
+      // Switch to pixel top/left positioning for smooth free-dragging
+      overlay.style.bottom = 'auto';
+      overlay.style.right = 'auto';
+      overlay.style.left = `${initialLeft}px`;
+      overlay.style.top = `${initialTop}px`;
+      overlay.style.transition = 'none';
+
+      document.body.style.userSelect = 'none';
+
+      window.addEventListener('mousemove', onPointerMove, { passive: false });
+      window.addEventListener('mouseup', onPointerUp);
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp);
+      window.addEventListener('touchcancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      if (e.cancelable) e.preventDefault();
+
+      const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+      const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+
+      const deltaX = clientX - startX;
+      const deltaY = clientY - startY;
+
+      let newLeft = initialLeft + deltaX;
+      let newTop = initialTop + deltaY;
+
+      // Keep overlay strictly within visible viewport bounds
+      const padding = 12;
+      const overlayWidth = overlay.offsetWidth;
+      const overlayHeight = overlay.offsetHeight;
+      const maxLeft = window.innerWidth - overlayWidth - padding;
+      const maxTop = window.innerHeight - overlayHeight - padding;
+
+      newLeft = Math.max(padding, Math.min(newLeft, Math.max(padding, maxLeft)));
+      newTop = Math.max(padding, Math.min(newTop, Math.max(padding, maxTop)));
+
+      overlay.style.left = `${newLeft}px`;
+      overlay.style.top = `${newTop}px`;
+    }
+
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      overlay.classList.remove('is-dragging');
+      overlay.style.transition = 'width 0.25s ease, opacity 0.25s ease';
+      document.body.style.userSelect = '';
+
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('touchend', onPointerUp);
+      window.removeEventListener('touchcancel', onPointerUp);
+    }
+
+    handle.addEventListener('mousedown', onPointerDown);
+    handle.addEventListener('touchstart', onPointerDown, { passive: true });
+
+    // Boundary check when window is resized
+    window.addEventListener('resize', () => {
+      if (overlay.style.display !== 'none' && overlay.getAttribute('data-dragged') === 'true') {
+        const rect = overlay.getBoundingClientRect();
+        const padding = 12;
+        const maxLeft = window.innerWidth - rect.width - padding;
+        const maxTop = window.innerHeight - rect.height - padding;
+
+        if (rect.left > maxLeft) {
+          overlay.style.left = `${Math.max(padding, maxLeft)}px`;
+        }
+        if (rect.top > maxTop) {
+          overlay.style.top = `${Math.max(padding, maxTop)}px`;
+        }
+      }
+    });
   }
 
   // Media Stream Initialization
@@ -316,6 +452,17 @@
       if (grid) grid.style.display = 'flex';
       overlay.style.width = '380px';
       if (btn) btn.textContent = '↗️';
+    }
+
+    if (overlay.getAttribute('data-dragged') === 'true') {
+      setTimeout(() => {
+        const rect = overlay.getBoundingClientRect();
+        const padding = 12;
+        const maxLeft = window.innerWidth - rect.width - padding;
+        const maxTop = window.innerHeight - rect.height - padding;
+        if (rect.left > maxLeft) overlay.style.left = `${Math.max(padding, maxLeft)}px`;
+        if (rect.top > maxTop) overlay.style.top = `${Math.max(padding, maxTop)}px`;
+      }, 50);
     }
   };
 
